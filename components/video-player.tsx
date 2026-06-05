@@ -691,6 +691,30 @@ export function VideoPlayer() {
     }
   }, [])
 
+  // Close quality menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (showQualityMenu) {
+        // Check if click is outside the quality menu
+        const target = e.target as HTMLElement
+        const qualityMenu = target.closest('[data-quality-menu]')
+        const qualityButton = target.closest('[data-quality-button]')
+        
+        if (!qualityMenu && !qualityButton) {
+          setShowQualityMenu(false)
+        }
+      }
+    }
+
+    if (showQualityMenu) {
+      document.addEventListener('click', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside)
+    }
+  }, [showQualityMenu])
+
   return (
     <div className="w-full flex flex-col items-center gap-3">
       {/* Format Buttons - Above Video */}
@@ -938,6 +962,7 @@ export function VideoPlayer() {
           {/* Quality Settings */}
           <div className="relative flex items-center">
             <button
+              data-quality-button
               onClick={(e) => {
                 e.stopPropagation()
                 setShowQualityMenu(!showQualityMenu)
@@ -953,6 +978,7 @@ export function VideoPlayer() {
             {/* Quality menu */}
             {showQualityMenu && (
               <div 
+                data-quality-menu
                 className="absolute bottom-full right-0 mb-2 bg-[#0a0806] border border-[#c9a84c]/30 rounded shadow-lg min-w-[120px] z-50"
                 onClick={(e) => e.stopPropagation()}
               >
