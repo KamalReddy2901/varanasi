@@ -272,8 +272,8 @@ export function VideoPlayer() {
     const videoElement = videoRef.current
     if (!videoElement) return
 
-    // HLS source URL - replace with your R2 master.m3u8 URL
-    const hlsSource = "https://pub-36eeef5229fc41e1bb5e30088592f214.r2.dev/master.m3u8"
+    // HLS source URL
+    const hlsSource = "https://pub-36eeef5229fc41e1bb5e30088592f214.r2.dev/hls/master.m3u8"
     
     const attemptAutoplay = async () => {
       // Check if HLS is supported
