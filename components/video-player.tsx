@@ -94,12 +94,27 @@ export function VideoPlayer() {
     }
     
     if (hlsRef.current) {
+      const hls = hlsRef.current
+      
+      // Save current playback state
+      const wasPlaying = !videoRef.current?.paused
+      
       if (qualityIndex === -1) {
-        // Auto quality
-        hlsRef.current.currentLevel = -1
+        // Auto quality - enable ABR
+        hls.currentLevel = -1
+        console.log('Switched to auto quality')
       } else {
-        // Manual quality
-        hlsRef.current.currentLevel = qualityIndex
+        // Manual quality - disable ABR and set specific level
+        hls.currentLevel = qualityIndex
+        console.log(`Switched to quality level ${qualityIndex} (${getQualityLabel(qualities[qualityIndex]?.height)})`)
+      }
+      
+      // HLS.js will handle the transition smoothly without pausing
+      // Just ensure playback continues if it was playing
+      if (wasPlaying && videoRef.current?.paused) {
+        videoRef.current.play().catch(err => {
+          console.log('Resume after quality change failed:', err)
+        })
       }
     }
     
@@ -273,6 +288,13 @@ export function VideoPlayer() {
           enableWorker: true,
           lowLatencyMode: false,
           backBufferLength: 90,
+          maxBufferLength: 30,
+          maxMaxBufferLength: 60,
+          // Smooth quality switching settings
+          abrEwmaDefaultEstimate: 500000, // Conservative starting bandwidth
+          abrBandWidthFactor: 0.95, // Safety factor for quality selection
+          abrBandWidthUpFactor: 0.7, // Be conservative when upgrading quality
+          startLevel: -1, // Start with auto quality
         })
         
         hlsRef.current = hls
