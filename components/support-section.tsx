@@ -33,33 +33,26 @@ export function SupportSection() {
           Support the Developer
         </h2>
         
-        <p className="text-[#e8e0d0]/80 font-sans text-xs sm:text-sm max-w-md">
+        <p className="text-[#e8e0d0]/80 font-sans text-xs sm:text-sm max-w-md px-4">
           If you find this project interesting, consider supporting the developer.
         </p>
 
-        {/* UPI ID with copy button */}
-        <div className="flex flex-col items-center gap-2 w-full max-w-sm">
-          <p className="text-[#c9a84c]/60 font-serif text-xs tracking-wider uppercase">
-            UPI ID
+        {/* UPI ID with copy button - inline compact design */}
+        <div className="flex items-center gap-2">
+          <p className="text-[#e8e0d0] font-mono text-xs sm:text-sm">
+            <span className="text-[#c9a84c]/70">UPI ID:</span> {upiId}
           </p>
-          <div className="flex items-center gap-2 w-full">
-            <div className="flex-1 px-4 py-2.5 bg-[#c9a84c]/5 border border-[#c9a84c]/30 rounded">
-              <p className="text-[#e8e0d0] font-mono text-sm text-center">
-                {upiId}
-              </p>
-            </div>
-            <button
-              onClick={handleCopy}
-              className="p-2.5 border border-[#c9a84c] text-[#c9a84c] hover:bg-[#c9a84c]/10 hover:shadow-[0_0_15px_rgba(201,168,76,0.3)] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a84c] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0806] rounded"
-              aria-label={copied ? "Copied" : "Copy UPI ID"}
-              type="button"
-            >
-              {copied ? <Check size={18} /> : <Copy size={18} />}
-            </button>
-          </div>
+          <button
+            onClick={handleCopy}
+            className="p-1.5 text-[#c9a84c] hover:text-[#d4b55c] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a84c] focus-visible:ring-offset-1 focus-visible:ring-offset-[#0a0806] rounded"
+            aria-label={copied ? "Copied" : "Copy UPI ID"}
+            type="button"
+          >
+            {copied ? <Check size={16} /> : <Copy size={16} />}
+          </button>
         </div>
 
-        <p className="text-[#e8e0d0]/70 font-sans text-xs italic mt-1">
+        <p className="text-[#e8e0d0]/70 font-sans text-xs italic">
           Every contribution helps keep this free & updated • I'm just a student ✌️
         </p>
       </div>
