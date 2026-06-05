@@ -242,7 +242,24 @@ export function VideoPlayer() {
   }, [])
 
   return (
-    <div className="w-full flex flex-col items-center gap-8">
+    <div className="w-full flex flex-col items-center gap-3">
+      {/* Format Buttons - Above Video */}
+      <div className="flex flex-wrap justify-center gap-2 md:gap-3 px-4 max-w-[1200px]">
+        {formats.map((format) => (
+          <button
+            key={format.id}
+            onClick={() => handleFormatChange(format)}
+            className={`px-3 md:px-4 py-2 md:py-2.5 font-serif text-[10px] md:text-xs tracking-[0.15em] uppercase transition-all duration-200 ease-out border ${
+              selectedFormat.id === format.id
+                ? "bg-[#c9a84c] text-[#0a0806] border-[#c9a84c]"
+                : "bg-transparent text-[#c9a84c] border-[#c9a84c]/50 hover:shadow-[0_0_15px_rgba(201,168,76,0.3)]"
+            }`}
+          >
+            {format.label} · {format.sublabel}
+          </button>
+        ))}
+      </div>
+
       {/* Video Container */}
       <div
         ref={containerRef}
@@ -378,31 +395,29 @@ export function VideoPlayer() {
         </div>
       </div>
 
-      {/* Format Buttons */}
-      <div className="flex flex-wrap justify-center gap-2 md:gap-3 px-4 max-w-[1200px]">
-        {formats.map((format) => (
-          <button
-            key={format.id}
-            onClick={() => handleFormatChange(format)}
-            className={`px-3 md:px-4 py-2 md:py-2.5 font-serif text-[10px] md:text-xs tracking-[0.15em] uppercase transition-all duration-200 ease-out border ${
-              selectedFormat.id === format.id
-                ? "bg-[#c9a84c] text-[#0a0806] border-[#c9a84c]"
-                : "bg-transparent text-[#c9a84c] border-[#c9a84c]/50 hover:shadow-[0_0_15px_rgba(201,168,76,0.3)]"
-            }`}
-          >
-            {format.label} · {format.sublabel}
-          </button>
-        ))}
-      </div>
+      {/* Format Indicator and Description - grouped closer */}
+      <div className="flex flex-col items-center gap-3 max-w-[600px] px-6">
+        {/* Format Indicator - Small tag */}
+        <div 
+          key={`indicator-${descriptionKey}`}
+          className="animate-in fade-in duration-300"
+        >
+          <div className="inline-block px-3 py-1 border border-[#c9a84c]/40">
+            <span className="text-[#c9a84c] font-serif text-[10px] tracking-[0.2em] uppercase">
+              {selectedFormat.label} · {selectedFormat.sublabel}
+            </span>
+          </div>
+        </div>
 
-      {/* Format Description */}
-      <div 
-        key={descriptionKey}
-        className="max-w-[600px] px-6 text-center animate-in fade-in duration-300"
-      >
-        <p className="text-[#e8e0d0] font-serif italic text-xs md:text-sm leading-relaxed">
-          {formatDescriptions[selectedFormat.id]}
-        </p>
+        {/* Format Description */}
+        <div 
+          key={descriptionKey}
+          className="text-center animate-in fade-in duration-300"
+        >
+          <p className="text-[#e8e0d0] font-serif text-xs md:text-sm leading-loose">
+            {formatDescriptions[selectedFormat.id]}
+          </p>
+        </div>
       </div>
     </div>
   )
