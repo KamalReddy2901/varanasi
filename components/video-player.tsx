@@ -42,6 +42,7 @@ export function VideoPlayer() {
   const [duration, setDuration] = useState(0)
   const [showControls, setShowControls] = useState(true)
   const [isDragging, setIsDragging] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const hideControlsTimeoutRef = useRef<NodeJS.Timeout>()
 
   const updateDimensions = () => {
@@ -116,6 +117,18 @@ export function VideoPlayer() {
     if (videoRef.current) {
       setDuration(videoRef.current.duration)
     }
+  }
+
+  const handleCanPlay = () => {
+    setIsLoading(false)
+  }
+
+  const handleWaiting = () => {
+    setIsLoading(true)
+  }
+
+  const handlePlaying = () => {
+    setIsLoading(false)
   }
 
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -209,13 +222,35 @@ export function VideoPlayer() {
           loop
           muted
           playsInline
-          src="/varanasi-trailer.mp4"
+          crossOrigin="anonymous"
+          preload="auto"
+          src="https://pub-80ef97260963441fbad8cf84c5193379.r2.dev/varanasi-trailer.mp4"
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
+          onCanPlay={handleCanPlay}
+          onWaiting={handleWaiting}
+          onPlaying={handlePlaying}
           onClick={handleVideoClick}
         />
         {/* Vignette overlay */}
         <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_100px_rgba(0,0,0,0.6)]" />
+        
+        {/* Loading overlay */}
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-[#0a0806]/90 backdrop-blur-sm">
+            <div className="flex flex-col items-center gap-4">
+              {/* Spinner */}
+              <div className="w-12 h-12 border-2 border-[#c9a84c]/20 border-t-[#c9a84c] rounded-full animate-spin" />
+              {/* Loading text */}
+              <p 
+                className="text-[#c9a84c] italic text-sm tracking-wide"
+                style={{ fontFamily: 'Cinzel, serif' }}
+              >
+                Your cinematic experience is loading...
+              </p>
+            </div>
+          </div>
+        )}
         
         {/* Format name overlay - bottom right */}
         <div 
