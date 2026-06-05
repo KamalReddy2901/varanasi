@@ -317,14 +317,15 @@ export function VideoPlayer() {
           if (data.fatal) {
             switch (data.type) {
               case Hls.ErrorTypes.NETWORK_ERROR:
-                console.log('Network error, trying to recover')
+                console.log('Network error, trying to recover. Details:', data.details)
                 hls.startLoad()
                 break
               case Hls.ErrorTypes.MEDIA_ERROR:
-                console.log('Media error, trying to recover')
+                console.log('Media error, trying to recover. Details:', data.details)
                 hls.recoverMediaError()
                 break
               default:
+                console.log('Fatal error, cannot recover. Type:', data.type, 'Details:', data.details)
                 setHasError(true)
                 setIsLoading(false)
                 break
