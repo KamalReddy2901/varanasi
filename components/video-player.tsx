@@ -595,7 +595,13 @@ export function VideoPlayer() {
                 className="text-[#c9a84c] italic text-sm tracking-wide max-w-md"
                 style={{ fontFamily: 'Cinzel, serif' }}
               >
-                Unable to load video. Please check your connection and try refreshing the page.
+                Sorry iPhone users... currently unavailable here :(
+              </p>
+              <p 
+                className="text-[#e8e0d0]/70 text-xs max-w-sm"
+                style={{ fontFamily: 'Cinzel, serif' }}
+              >
+                Please check your connection or try refreshing the page
               </p>
               <button
                 onClick={() => {
