@@ -14,6 +14,7 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://varanasi.pages.dev'),
   title: 'VARANASI | Experience The Formats',
   description: 'An SS Rajamouli Film - Experience the epic in multiple formats. IMAX, 70mm, and beyond.',
   openGraph: {
