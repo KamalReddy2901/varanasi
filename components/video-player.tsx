@@ -530,7 +530,7 @@ export function VideoPlayer() {
           muted
           playsInline
           crossOrigin="anonymous"
-          preload="metadata"
+          preload="auto"
           src="https://pub-80ef97260963441fbad8cf84c5193379.r2.dev/varanasi-trailer.mp4"
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
