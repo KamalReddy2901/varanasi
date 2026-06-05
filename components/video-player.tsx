@@ -44,6 +44,7 @@ export function VideoPlayer() {
   const [showControls, setShowControls] = useState(true)
   const [isDragging, setIsDragging] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [isInitialLoad, setIsInitialLoad] = useState(true) // Track if this is the first load
   const [showPlayButton, setShowPlayButton] = useState(false)
   const [hasError, setHasError] = useState(false)
   const [retryCount, setRetryCount] = useState(0)
@@ -199,21 +200,26 @@ export function VideoPlayer() {
   const handleLoadedData = () => {
     // Video has loaded enough data to start playing
     setIsLoading(false)
+    setIsInitialLoad(false) // Mark initial load as complete
   }
 
   const handleCanPlay = () => {
     // Video can play through without buffering
     setIsLoading(false)
+    setIsInitialLoad(false) // Mark initial load as complete
   }
 
   const handleWaiting = () => {
-    // Video is buffering
-    setIsLoading(true)
+    // Video is buffering - only show loading spinner on initial load
+    if (isInitialLoad) {
+      setIsLoading(true)
+    }
   }
 
   const handlePlaying = () => {
     // Video has started playing
     setIsLoading(false)
+    setIsInitialLoad(false) // Mark initial load as complete
     setShowPlayButton(false)
     setIsPlaying(true)
   }
@@ -298,6 +304,7 @@ export function VideoPlayer() {
           }))
           setQualities(qualityLevels)
           setIsLoading(false)
+          setIsInitialLoad(false) // Mark initial load as complete
           
           // Try autoplay
           videoElement.play()
