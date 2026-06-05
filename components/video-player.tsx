@@ -397,13 +397,13 @@ export function VideoPlayer() {
 
       {/* Format Indicator and Description - grouped closer */}
       <div className="flex flex-col items-center gap-3 max-w-[600px] px-6">
-        {/* Format Indicator - Small tag */}
+        {/* Format Indicator - compact rectangular box */}
         <div 
           key={`indicator-${descriptionKey}`}
           className="animate-in fade-in duration-300"
         >
-          <div className="inline-block px-3 py-1 border border-[#c9a84c]/40">
-            <span className="text-[#c9a84c] font-serif text-[10px] tracking-[0.2em] uppercase">
+          <div className="inline-block px-3 py-0.5 border border-[#e8e0d0]/30">
+            <span className="text-[#e8e0d0] font-serif text-xs tracking-[0.2em] uppercase">
               {selectedFormat.label} · {selectedFormat.sublabel}
             </span>
           </div>
