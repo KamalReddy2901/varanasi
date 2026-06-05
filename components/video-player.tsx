@@ -93,18 +93,33 @@ export function VideoPlayer() {
       return
     }
     
-    if (hlsRef.current) {
+    if (hlsRef.current && videoRef.current) {
       const hls = hlsRef.current
+      const video = videoRef.current
+      
+      // Save current state
+      const currentTime = video.currentTime
+      const wasPlaying = !video.paused
       
       if (qualityIndex === -1) {
-        // Auto quality - enable ABR with smooth transition
-        hls.nextLevel = -1
-        console.log('Switching to auto quality (smooth transition)')
+        // Auto quality - enable ABR
+        hls.currentLevel = -1
+        console.log('Switched to auto quality')
       } else {
-        // Manual quality - use nextLevel for smooth transition
-        // This will continue playing current quality while buffering the new one
-        hls.nextLevel = qualityIndex
-        console.log(`Switching to quality level ${qualityIndex} (${getQualityLabel(qualities[qualityIndex]?.height)}) - smooth transition`)
+        // Manual quality switching with seamless transition
+        // Use loadLevel to change quality more aggressively
+        hls.loadLevel = qualityIndex
+        console.log(`Switching to quality level ${qualityIndex} (${getQualityLabel(qualities[qualityIndex]?.height)})`)
+        
+        // After setting loadLevel, ensure playback continues smoothly
+        // The video should continue playing while new fragments load
+      }
+      
+      // Ensure video continues playing if it was playing
+      if (wasPlaying) {
+        video.play().catch(err => {
+          console.log('Failed to resume playback after quality change:', err)
+        })
       }
       
       // Update UI state immediately to show selection
@@ -277,23 +292,30 @@ export function VideoPlayer() {
       // Check if HLS is supported
       if (Hls.isSupported()) {
         const hls = new Hls({
+          debug: false,
           enableWorker: true,
           lowLatencyMode: false,
+          // Buffer settings optimized for smooth quality switching
           backBufferLength: 90,
           maxBufferLength: 30,
           maxMaxBufferLength: 60,
-          // Smooth quality switching settings
-          abrEwmaDefaultEstimate: 500000, // Conservative starting bandwidth
-          abrBandWidthFactor: 0.95, // Safety factor for quality selection
-          abrBandWidthUpFactor: 0.7, // Be conservative when upgrading quality
+          maxBufferSize: 60 * 1000 * 1000, // 60 MB
+          maxBufferHole: 0.5,
+          // ABR (Adaptive Bitrate) settings
+          abrEwmaDefaultEstimate: 500000,
+          abrBandWidthFactor: 0.95,
+          abrBandWidthUpFactor: 0.7,
           startLevel: -1, // Start with auto quality
-          // Enable smooth quality switching without pause
-          // HLS.js will buffer the new quality before switching
-          capLevelToPlayerSize: false, // Allow any quality selection
-          // Fragment loading settings for smooth transitions
+          // Quality switching behavior
+          capLevelToPlayerSize: false,
+          // Fragment loading - faster timeouts for quicker quality changes
           fragLoadingTimeOut: 20000,
           manifestLoadingTimeOut: 10000,
           levelLoadingTimeOut: 10000,
+          fragLoadingMaxRetry: 6,
+          levelLoadingMaxRetry: 4,
+          // Start loading fragments immediately on quality change
+          startFragPrefetch: true,
         })
         
         hlsRef.current = hls
@@ -334,6 +356,22 @@ export function VideoPlayer() {
           console.log(`Quality switched to: ${getQualityLabel(hls.levels[data.level]?.height)} (level ${data.level})`)
           // Update UI to reflect actual current quality
           setCurrentQuality(hls.currentLevel)
+        })
+        
+        // Monitor buffering to prevent stalls during quality changes
+        hls.on(Hls.Events.FRAG_BUFFERED, (event, data) => {
+          // Fragment successfully buffered - good for quality transitions
+          if (videoElement.paused && isPlaying) {
+            // Video got paused during buffering, resume it
+            videoElement.play().catch(err => {
+              console.log('Failed to resume after buffering:', err)
+            })
+          }
+        })
+        
+        hls.on(Hls.Events.FRAG_CHANGED, (event, data) => {
+          // Active fragment changed - playback is progressing
+          console.log('Fragment changed, playback progressing smoothly')
         })
         
         hls.on(Hls.Events.ERROR, (event, data) => {
