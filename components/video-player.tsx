@@ -185,30 +185,21 @@ export function VideoPlayer() {
     const videoElement = e.currentTarget
     console.error('Video loading error:', videoElement.error)
     
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
-    
-    if (isIOS) {
-      // On iOS, show error immediately
+    // Try to retry a couple times before giving up
+    if (retryCount < 2) {
+      console.log(`Retrying video load... (attempt ${retryCount + 1})`)
+      setRetryCount(prev => prev + 1)
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.load()
+          videoRef.current.play().catch(() => {
+            setShowPlayButton(true)
+          })
+        }
+      }, 1000)
+    } else {
       setIsLoading(false)
       setHasError(true)
-      setIsPlaying(false)
-    } else {
-      // Only show error after retries on non-iOS
-      if (retryCount < 2) {
-        console.log(`Retrying video load... (attempt ${retryCount + 1})`)
-        setRetryCount(prev => prev + 1)
-        setTimeout(() => {
-          if (videoRef.current) {
-            videoRef.current.load()
-            videoRef.current.play().catch(() => {
-              setShowPlayButton(true)
-            })
-          }
-        }, 1000)
-      } else {
-        setIsLoading(false)
-        setHasError(true)
-      }
     }
   }
 
@@ -234,20 +225,11 @@ export function VideoPlayer() {
     }
   }
 
-  // Attempt autoplay and handle iOS restrictions
+  // Attempt autoplay
   useEffect(() => {
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
-    
     const attemptAutoplay = async () => {
       if (videoRef.current) {
-        // On iOS, show error immediately due to codec issues
-        if (isIOS) {
-          setIsLoading(false)
-          setHasError(true)
-          return
-        }
-        
-        // Set video attributes for other platforms
+        // Set video attributes
         const video = videoRef.current as any
         video.setAttribute('playsinline', '')
         video.setAttribute('x-webkit-airplay', 'allow')
@@ -587,7 +569,7 @@ export function VideoPlayer() {
           onError={handleError}
         >
           <source 
-            src="https://pub-80ef97260963441fbad8cf84c5193379.r2.dev/varanasi-trailer.mp4" 
+            src="https://pub-36eeef5229fc41e1bb5e30088592f214.r2.dev/2026-06-05_IMAX_2001457389091074506.mp4" 
             type="video/mp4"
           />
           Your browser does not support the video tag.
@@ -627,55 +609,35 @@ export function VideoPlayer() {
                   className="text-[#c9a84c] text-base md:text-lg tracking-wide leading-relaxed"
                   style={{ fontFamily: 'Cinzel, serif' }}
                 >
-                  {/iPad|iPhone|iPod/.test(navigator.userAgent) ? (
-                    <>
-                      Sorry iPhone/iPad users...
-                      <br />
-                      Video codec not supported :(
-                    </>
-                  ) : (
-                    <>
-                      Video unavailable
-                    </>
-                  )}
+                  Video unavailable
                 </h3>
                 
                 <p 
                   className="text-[#e8e0d0]/70 text-xs md:text-sm leading-relaxed"
                 >
-                  {/iPad|iPhone|iPod/.test(navigator.userAgent) ? (
-                    <>
-                      Safari doesn't support this video format. Please try viewing on a desktop browser or Android device.
-                    </>
-                  ) : (
-                    <>
-                      Please check your connection or try refreshing the page
-                    </>
-                  )}
+                  Please check your connection or try refreshing the page
                 </p>
               </div>
               
-              {/* Retry Button - only show for non-iOS */}
-              {!/iPad|iPhone|iPod/.test(navigator.userAgent) && (
-                <button
-                  onClick={(e) => {
-                    setHasError(false)
-                    setIsLoading(true)
-                    setRetryCount(0)
-                    if (videoRef.current) {
-                      videoRef.current.load()
-                      videoRef.current.play().catch(() => {
-                        setShowPlayButton(true)
-                      })
-                    }
-                    e.currentTarget.blur()
-                  }}
-                  className="mt-2 px-8 py-2.5 font-serif text-[#c9a84c] text-sm tracking-[0.15em] uppercase border border-[#c9a84c] bg-transparent hover:bg-[#c9a84c] hover:text-[#0a0806] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a84c] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0806]"
-                  type="button"
-                >
-                  Retry
-                </button>
-              )}
+              {/* Retry Button */}
+              <button
+                onClick={(e) => {
+                  setHasError(false)
+                  setIsLoading(true)
+                  setRetryCount(0)
+                  if (videoRef.current) {
+                    videoRef.current.load()
+                    videoRef.current.play().catch(() => {
+                      setShowPlayButton(true)
+                    })
+                  }
+                  e.currentTarget.blur()
+                }}
+                className="mt-2 px-8 py-2.5 font-serif text-[#c9a84c] text-sm tracking-[0.15em] uppercase border border-[#c9a84c] bg-transparent hover:bg-[#c9a84c] hover:text-[#0a0806] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a84c] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0806]"
+                type="button"
+              >
+                Retry
+              </button>
             </div>
           </div>
         )}
