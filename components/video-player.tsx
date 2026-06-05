@@ -43,6 +43,7 @@ export function VideoPlayer() {
   const [showControls, setShowControls] = useState(true)
   const [isDragging, setIsDragging] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [showPlayButton, setShowPlayButton] = useState(false)
   const hideControlsTimeoutRef = useRef<NodeJS.Timeout>()
 
   const updateDimensions = () => {
@@ -137,12 +138,44 @@ export function VideoPlayer() {
   const handlePlaying = () => {
     // Video has started playing
     setIsLoading(false)
+    setShowPlayButton(false)
   }
 
   const handleError = (e: React.SyntheticEvent<HTMLVideoElement, Event>) => {
     // Don't log error, just hide loading state
     setIsLoading(false)
   }
+
+  const handlePlay = async () => {
+    if (videoRef.current) {
+      try {
+        await videoRef.current.play()
+        setIsPlaying(true)
+        setShowPlayButton(false)
+      } catch (err) {
+        console.log('Autoplay prevented, showing play button')
+        setShowPlayButton(true)
+      }
+    }
+  }
+
+  // Attempt autoplay and handle iOS restrictions
+  useEffect(() => {
+    const attemptAutoplay = async () => {
+      if (videoRef.current) {
+        try {
+          await videoRef.current.play()
+          setIsPlaying(true)
+        } catch (err) {
+          console.log('Autoplay blocked, user interaction required')
+          setShowPlayButton(true)
+          setIsPlaying(false)
+        }
+      }
+    }
+    
+    attemptAutoplay()
+  }, [])
 
   // Fallback: if video takes too long, hide loading after 5 seconds
   useEffect(() => {
@@ -321,7 +354,9 @@ export function VideoPlayer() {
         <video
           ref={videoRef}
           className="w-full h-full object-cover cursor-pointer"
-          autoPlay
+          style={{
+            objectPosition: 'center center'
+          }}
           loop
           muted
           playsInline
@@ -354,6 +389,19 @@ export function VideoPlayer() {
                 Your cinematic experience is loading...
               </p>
             </div>
+          </div>
+        )}
+
+        {/* iOS Play Button Overlay */}
+        {showPlayButton && !isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-[#0a0806]/80 backdrop-blur-sm">
+            <button
+              onClick={handlePlay}
+              className="flex items-center justify-center w-20 h-20 rounded-full bg-[#c9a84c] hover:bg-[#d4b55c] transition-all duration-200 shadow-[0_0_40px_rgba(201,168,76,0.4)]"
+              aria-label="Play video"
+            >
+              <Play size={32} className="text-[#0a0806] ml-1" fill="currentColor" />
+            </button>
           </div>
         )}
         
