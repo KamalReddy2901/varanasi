@@ -28,17 +28,17 @@ export function SupportSection() {
         <div className="h-px w-6 sm:w-12 bg-[#c9a84c]/30 flex-shrink-0"></div>
       </div>
       
-      <div className="flex flex-col items-center gap-4 text-center">
+      <div className="flex flex-col items-center gap-3 text-center">
         <h2 className="font-serif text-[#c9a84c] text-lg sm:text-xl tracking-[0.1em]">
           Support the Developer
         </h2>
         
-        <p className="text-[#e8e0d0]/80 font-sans text-xs sm:text-sm max-w-md px-4">
+        <p className="text-[#e8e0d0]/80 font-sans text-xs sm:text-sm max-w-md px-4 whitespace-nowrap">
           If you find this project interesting, consider supporting the developer.
         </p>
 
         {/* UPI ID with copy button - inline compact design */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 whitespace-nowrap">
           <p className="text-[#e8e0d0] font-mono text-xs sm:text-sm">
             <span className="text-[#c9a84c]/70">UPI ID:</span> {upiId}
           </p>
@@ -52,7 +52,7 @@ export function SupportSection() {
           </button>
         </div>
 
-        <p className="text-[#e8e0d0]/70 font-sans text-xs italic">
+        <p className="text-[#e8e0d0]/70 font-sans text-xs italic whitespace-nowrap">
           Every contribution helps keep this free & updated • I'm just a student ✌️
         </p>
       </div>
