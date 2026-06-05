@@ -36,7 +36,7 @@ export function VideoPlayer() {
   const [descriptionKey, setDescriptionKey] = useState(0)
   
   // Video player state
-  const [isPlaying, setIsPlaying] = useState(true)
+  const [isPlaying, setIsPlaying] = useState(false)
   const [isMuted, setIsMuted] = useState(true)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
@@ -44,6 +44,7 @@ export function VideoPlayer() {
   const [isDragging, setIsDragging] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [showPlayButton, setShowPlayButton] = useState(false)
+  const [hasError, setHasError] = useState(false)
   const hideControlsTimeoutRef = useRef<NodeJS.Timeout>()
 
   const updateDimensions = () => {
@@ -69,21 +70,42 @@ export function VideoPlayer() {
   }, [selectedFormat])
 
   const handleFormatChange = (format: Format) => {
+    const wasPlaying = isPlaying
+    
     setSelectedFormat(format)
     setGlowPulse(true)
     setDescriptionKey(prev => prev + 1)
     setTimeout(() => setGlowPulse(false), 600)
+    
+    // Resume playback after format change on iOS
+    if (wasPlaying && videoRef.current) {
+      setTimeout(() => {
+        videoRef.current?.play().catch(() => {
+          setShowPlayButton(true)
+          setIsPlaying(false)
+        })
+      }, 100)
+    }
   }
 
   // Video control handlers
-  const togglePlayPause = () => {
+  const togglePlayPause = async (e?: React.MouseEvent) => {
+    e?.stopPropagation()
     if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause()
-      } else {
-        videoRef.current.play()
+      try {
+        if (isPlaying) {
+          videoRef.current.pause()
+          setIsPlaying(false)
+        } else {
+          await videoRef.current.play()
+          setIsPlaying(true)
+          setShowPlayButton(false)
+        }
+      } catch (err) {
+        console.log('Play/pause failed:', err)
+        setShowPlayButton(true)
+        setIsPlaying(false)
       }
-      setIsPlaying(!isPlaying)
     }
   }
 
@@ -91,19 +113,30 @@ export function VideoPlayer() {
     togglePlayPause()
   }
 
-  const toggleMute = () => {
+  const toggleMute = (e?: React.MouseEvent) => {
+    e?.stopPropagation()
     if (videoRef.current) {
       videoRef.current.muted = !isMuted
       setIsMuted(!isMuted)
     }
   }
 
-  const toggleFullscreen = () => {
-    if (containerRef.current) {
-      if (!document.fullscreenElement) {
-        containerRef.current.requestFullscreen()
-      } else {
-        document.exitFullscreen()
+  const toggleFullscreen = (e?: React.MouseEvent) => {
+    e?.stopPropagation()
+    if (videoRef.current) {
+      // iOS Safari uses webkitEnterFullscreen on the video element
+      const video = videoRef.current as any
+      
+      if (video.webkitEnterFullscreen) {
+        // iOS Safari
+        video.webkitEnterFullscreen()
+      } else if (containerRef.current) {
+        // Standard fullscreen API for other browsers
+        if (!document.fullscreenElement) {
+          containerRef.current.requestFullscreen()
+        } else {
+          document.exitFullscreen()
+        }
       }
     }
   }
@@ -139,11 +172,18 @@ export function VideoPlayer() {
     // Video has started playing
     setIsLoading(false)
     setShowPlayButton(false)
+    setIsPlaying(true)
+  }
+
+  const handlePause = () => {
+    // Video was paused
+    setIsPlaying(false)
   }
 
   const handleError = (e: React.SyntheticEvent<HTMLVideoElement, Event>) => {
-    // Don't log error, just hide loading state
+    console.error('Video loading error')
     setIsLoading(false)
+    setHasError(true)
   }
 
   const handlePlay = async () => {
@@ -163,9 +203,22 @@ export function VideoPlayer() {
   useEffect(() => {
     const attemptAutoplay = async () => {
       if (videoRef.current) {
+        // Set iOS-specific attributes via ref
+        const video = videoRef.current as any
+        video.setAttribute('playsinline', 'true')
+        video.setAttribute('webkit-playsinline', 'true')
+        video.setAttribute('x-webkit-airplay', 'allow')
+        
+        // Force load metadata
+        videoRef.current.load()
+        
+        // Small delay to ensure video is ready on iOS
+        await new Promise(resolve => setTimeout(resolve, 100))
+        
         try {
           await videoRef.current.play()
           setIsPlaying(true)
+          setShowPlayButton(false)
         } catch (err) {
           console.log('Autoplay blocked, user interaction required')
           setShowPlayButton(true)
@@ -189,53 +242,77 @@ export function VideoPlayer() {
   }, [isLoading])
 
   const handleSeek = (clientX: number, element: HTMLDivElement) => {
-    if (videoRef.current && duration > 0) {
-      const rect = element.getBoundingClientRect()
-      const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
-      const newTime = pos * duration
-      videoRef.current.currentTime = newTime
-      setCurrentTime(newTime)
+    if (!videoRef.current) return
+    
+    // Force load metadata if not loaded yet
+    if (!duration || duration === 0) {
+      videoRef.current.load()
+      // Wait for metadata to load
+      const onMetadataLoaded = () => {
+        if (videoRef.current && videoRef.current.duration > 0) {
+          const rect = element.getBoundingClientRect()
+          const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
+          const newTime = pos * videoRef.current.duration
+          videoRef.current.currentTime = newTime
+          setCurrentTime(newTime)
+          setDuration(videoRef.current.duration)
+        }
+        videoRef.current?.removeEventListener('loadedmetadata', onMetadataLoaded)
+      }
+      videoRef.current.addEventListener('loadedmetadata', onMetadataLoaded)
+      return
     }
+    
+    const rect = element.getBoundingClientRect()
+    const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
+    const newTime = pos * duration
+    videoRef.current.currentTime = newTime
+    setCurrentTime(newTime)
   }
 
   const handleSeekMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault()
+    e.stopPropagation()
     setIsDragging(true)
+    setShowControls(true)
+    if (hideControlsTimeoutRef.current) {
+      clearTimeout(hideControlsTimeoutRef.current)
+    }
     if (e.currentTarget) {
       handleSeek(e.clientX, e.currentTarget)
     }
   }
 
   const handleSeekTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-    e.preventDefault()
+    e.stopPropagation()
     setIsDragging(true)
-    if (e.currentTarget && e.touches[0]) {
-      handleSeek(e.touches[0].clientX, e.currentTarget)
+    setShowControls(true)
+    if (hideControlsTimeoutRef.current) {
+      clearTimeout(hideControlsTimeoutRef.current)
     }
-  }
-
-  const handleSeekTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (isDragging && e.currentTarget && e.touches[0]) {
-      e.preventDefault()
+    if (e.currentTarget && e.touches[0]) {
       handleSeek(e.touches[0].clientX, e.currentTarget)
     }
   }
 
   const handleSeekTouchEnd = () => {
     setIsDragging(false)
-  }
-
-  const handleSeekMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (isDragging) {
-      e.preventDefault()
-      if (e.currentTarget) {
-        handleSeek(e.clientX, e.currentTarget)
-      }
+    // Restart auto-hide timer after seeking
+    if (isPlaying) {
+      hideControlsTimeoutRef.current = setTimeout(() => {
+        setShowControls(false)
+      }, 3000)
     }
   }
 
   const handleSeekMouseUp = () => {
     setIsDragging(false)
+    // Restart auto-hide timer after seeking
+    if (isPlaying) {
+      hideControlsTimeoutRef.current = setTimeout(() => {
+        setShowControls(false)
+      }, 3000)
+    }
   }
 
   useEffect(() => {
@@ -262,6 +339,7 @@ export function VideoPlayer() {
 
     const handleGlobalTouchMove = (e: TouchEvent) => {
       if (isDragging && videoRef.current && duration > 0 && e.touches[0]) {
+        e.preventDefault() // Only prevent default during active dragging
         const seekBar = document.querySelector('[data-seek-bar]') as HTMLDivElement
         if (seekBar) {
           const rect = seekBar.getBoundingClientRect()
@@ -273,10 +351,13 @@ export function VideoPlayer() {
       }
     }
     
-    window.addEventListener('mouseup', handleGlobalMouseUp)
-    window.addEventListener('mousemove', handleGlobalMouseMove)
-    window.addEventListener('touchend', handleGlobalTouchEnd)
-    window.addEventListener('touchmove', handleGlobalTouchMove, { passive: false })
+    if (isDragging) {
+      window.addEventListener('mouseup', handleGlobalMouseUp)
+      window.addEventListener('mousemove', handleGlobalMouseMove)
+      window.addEventListener('touchend', handleGlobalTouchEnd)
+      window.addEventListener('touchmove', handleGlobalTouchMove, { passive: false })
+    }
+    
     return () => {
       window.removeEventListener('mouseup', handleGlobalMouseUp)
       window.removeEventListener('mousemove', handleGlobalMouseMove)
@@ -286,6 +367,9 @@ export function VideoPlayer() {
   }, [isDragging, duration])
 
   const formatTime = (time: number) => {
+    if (!isFinite(time) || isNaN(time)) {
+      return '0:00'
+    }
     const minutes = Math.floor(time / 60)
     const seconds = Math.floor(time % 60)
     return `${minutes}:${seconds.toString().padStart(2, '0')}`
@@ -297,18 +381,100 @@ export function VideoPlayer() {
       clearTimeout(hideControlsTimeoutRef.current)
     }
     hideControlsTimeoutRef.current = setTimeout(() => {
-      setShowControls(false)
+      if (isPlaying) {
+        setShowControls(false)
+      }
     }, 3000)
+  }
+
+  const handleContainerInteraction = (e: React.MouseEvent | React.TouchEvent) => {
+    const target = e.target as HTMLElement
+    const isControlBar = target.closest('[data-control-bar]')
+    const isPlayButton = target.closest('[data-play-button]')
+    const isSeekBar = target.closest('[data-seek-bar]')
+    
+    if (!isControlBar && !isPlayButton && !isSeekBar) {
+      // If it's a touch event, show/hide controls
+      if (e.type === 'touchstart') {
+        setShowControls(prev => !prev)
+        if (hideControlsTimeoutRef.current) {
+          clearTimeout(hideControlsTimeoutRef.current)
+        }
+        if (isPlaying) {
+          hideControlsTimeoutRef.current = setTimeout(() => {
+            setShowControls(false)
+          }, 4000)
+        }
+      } 
+      // If it's a click event (desktop), toggle play/pause
+      else if (e.type === 'click') {
+        togglePlayPause()
+      }
+    }
   }
 
   const handleMouseLeave = () => {
     if (hideControlsTimeoutRef.current) {
       clearTimeout(hideControlsTimeoutRef.current)
     }
-    hideControlsTimeoutRef.current = setTimeout(() => {
-      setShowControls(false)
-    }, 1000)
+    if (isPlaying) {
+      hideControlsTimeoutRef.current = setTimeout(() => {
+        setShowControls(false)
+      }, 1000)
+    }
   }
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle keys when video player is in view and not typing in input
+      if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') {
+        return
+      }
+
+      switch (e.key) {
+        case ' ':
+        case 'k':
+          e.preventDefault()
+          togglePlayPause()
+          break
+        case 'ArrowLeft':
+          e.preventDefault()
+          if (videoRef.current && duration > 0) {
+            videoRef.current.currentTime = Math.max(0, currentTime - 5)
+          }
+          break
+        case 'ArrowRight':
+          e.preventDefault()
+          if (videoRef.current && duration > 0) {
+            videoRef.current.currentTime = Math.min(duration, currentTime + 5)
+          }
+          break
+        case 'ArrowUp':
+          e.preventDefault()
+          if (videoRef.current && duration > 0) {
+            videoRef.current.currentTime = Math.min(duration, currentTime + 10)
+          }
+          break
+        case 'ArrowDown':
+          e.preventDefault()
+          if (videoRef.current && duration > 0) {
+            videoRef.current.currentTime = Math.max(0, currentTime - 10)
+          }
+          break
+        case 'm':
+          e.preventDefault()
+          toggleMute()
+          break
+        case 'f':
+          e.preventDefault()
+          toggleFullscreen()
+          break
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isPlaying, currentTime, duration])
 
   useEffect(() => {
     return () => {
@@ -325,8 +491,9 @@ export function VideoPlayer() {
         {formats.map((format) => (
           <button
             key={format.id}
+            type="button"
             onClick={() => handleFormatChange(format)}
-            className={`px-3 md:px-4 py-2 md:py-2.5 font-serif text-[10px] md:text-xs tracking-[0.15em] uppercase transition-all duration-200 ease-out border ${
+            className={`px-3 md:px-4 py-2 md:py-2.5 font-serif text-[10px] md:text-xs tracking-[0.15em] uppercase transition-all duration-200 ease-out border focus:outline-none focus:ring-2 focus:ring-[#c9a84c] focus:ring-offset-2 focus:ring-offset-[#0a0806] ${
               selectedFormat.id === format.id
                 ? "bg-[#c9a84c] text-[#0a0806] border-[#c9a84c]"
                 : "bg-transparent text-[#c9a84c] border-[#c9a84c]/50 hover:shadow-[0_0_15px_rgba(201,168,76,0.3)]"
@@ -340,7 +507,7 @@ export function VideoPlayer() {
       {/* Video Container */}
       <div
         ref={containerRef}
-        className={`relative overflow-hidden border border-[#c9a84c]/30 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+        className={`relative overflow-hidden border border-[#c9a84c]/30 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] cursor-pointer ${
           glowPulse ? "shadow-[0_0_40px_rgba(201,168,76,0.4)]" : "shadow-[0_0_20px_rgba(201,168,76,0.15)]"
         }`}
         style={{ 
@@ -350,10 +517,12 @@ export function VideoPlayer() {
         }}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
+        onTouchStart={handleContainerInteraction}
+        onClick={handleContainerInteraction}
       >
         <video
           ref={videoRef}
-          className="w-full h-full object-cover cursor-pointer"
+          className="w-full h-full object-cover"
           style={{
             objectPosition: 'center center'
           }}
@@ -361,7 +530,7 @@ export function VideoPlayer() {
           muted
           playsInline
           crossOrigin="anonymous"
-          preload="auto"
+          preload="metadata"
           src="https://pub-80ef97260963441fbad8cf84c5193379.r2.dev/varanasi-trailer.mp4"
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
@@ -369,14 +538,14 @@ export function VideoPlayer() {
           onCanPlay={handleCanPlay}
           onWaiting={handleWaiting}
           onPlaying={handlePlaying}
+          onPause={handlePause}
           onError={handleError}
-          onClick={handleVideoClick}
         />
         {/* Vignette overlay */}
         <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_100px_rgba(0,0,0,0.6)]" />
         
         {/* Loading overlay */}
-        {isLoading && (
+        {isLoading && !hasError && (
           <div className="absolute inset-0 flex items-center justify-center bg-[#0a0806]/90 backdrop-blur-sm">
             <div className="flex flex-col items-center gap-4">
               {/* Spinner */}
@@ -392,13 +561,34 @@ export function VideoPlayer() {
           </div>
         )}
 
+        {/* Error overlay */}
+        {hasError && (
+          <div className="absolute inset-0 flex items-center justify-center bg-[#0a0806]/90 backdrop-blur-sm">
+            <div className="flex flex-col items-center gap-4 px-6 text-center">
+              <div className="w-12 h-12 border-2 border-red-500/50 rounded-full flex items-center justify-center">
+                <span className="text-red-500 text-2xl">⚠</span>
+              </div>
+              <p 
+                className="text-[#c9a84c] italic text-sm tracking-wide max-w-md"
+                style={{ fontFamily: 'Cinzel, serif' }}
+              >
+                Unable to load video. Please check your connection and try refreshing the page.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* iOS Play Button Overlay */}
-        {showPlayButton && !isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-[#0a0806]/80 backdrop-blur-sm">
+        {showPlayButton && !isLoading && !hasError && (
+          <div 
+            className="absolute inset-0 flex items-center justify-center bg-[#0a0806]/80 backdrop-blur-sm"
+            data-play-button
+          >
             <button
               onClick={handlePlay}
               className="flex items-center justify-center w-20 h-20 rounded-full bg-[#c9a84c] hover:bg-[#d4b55c] transition-all duration-200 shadow-[0_0_40px_rgba(201,168,76,0.4)]"
               aria-label="Play video"
+              type="button"
             >
               <Play size={32} className="text-[#0a0806] ml-1" fill="currentColor" />
             </button>
@@ -407,13 +597,13 @@ export function VideoPlayer() {
         
         {/* Format name overlay - bottom right */}
         <div 
-          className="absolute bottom-[48px] right-4 pointer-events-none transition-opacity duration-200"
+          className="absolute bottom-[56px] md:bottom-[48px] right-2 md:right-4 pointer-events-none transition-opacity duration-200 text-right"
           style={{ 
             fontFamily: 'Cinzel, serif',
-            fontSize: '11px',
+            fontSize: '9px',
             letterSpacing: '0.2em',
             color: 'white',
-            opacity: 0.85,
+            opacity: showControls ? 0 : 0.85,
             textShadow: '0 1px 4px rgba(0,0,0,0.8)'
           }}
         >
@@ -422,18 +612,22 @@ export function VideoPlayer() {
 
         {/* Custom control bar */}
         <div 
+          data-control-bar
           className="absolute bottom-0 left-0 right-0 flex items-center gap-3 px-4 py-2.5 transition-opacity duration-300"
           style={{
             background: 'linear-gradient(to bottom, transparent, rgba(0,0,0,0.75))',
-            opacity: showControls ? 1 : 0
+            opacity: showControls ? 1 : 0,
+            pointerEvents: showControls ? 'auto' : 'none'
           }}
           onMouseMove={handleMouseMove}
+          onTouchStart={(e) => e.stopPropagation()}
         >
           {/* Play/Pause button */}
           <button
             onClick={togglePlayPause}
-            className="text-[#c9a84c] hover:text-[#d4b55c] transition-colors"
+            className="text-[#c9a84c] hover:text-[#d4b55c] transition-colors touch-none focus:outline-none focus:ring-2 focus:ring-[#c9a84c] rounded"
             aria-label={isPlaying ? "Pause" : "Play"}
+            type="button"
           >
             {isPlaying ? <Pause size={18} /> : <Play size={18} />}
           </button>
@@ -446,13 +640,24 @@ export function VideoPlayer() {
           {/* Seek bar - larger hit area for mobile */}
           <div 
             data-seek-bar
-            className="flex-grow h-3 md:h-1 flex items-center cursor-pointer group relative"
+            className="flex-grow h-8 md:h-6 flex items-center cursor-pointer group relative"
             onMouseDown={handleSeekMouseDown}
-            onMouseMove={handleSeekMouseMove}
             onMouseUp={handleSeekMouseUp}
             onTouchStart={handleSeekTouchStart}
-            onTouchMove={handleSeekTouchMove}
             onTouchEnd={handleSeekTouchEnd}
+            onClick={(e) => {
+              e.stopPropagation()
+              e.preventDefault()
+              if (e.currentTarget && !isDragging) {
+                handleSeek(e.clientX, e.currentTarget)
+              }
+            }}
+            role="slider"
+            aria-label="Seek video"
+            aria-valuemin={0}
+            aria-valuemax={duration}
+            aria-valuenow={currentTime}
+            tabIndex={0}
           >
             {/* Track background */}
             <div className="absolute inset-0 flex items-center">
@@ -464,9 +669,9 @@ export function VideoPlayer() {
                 />
               </div>
             </div>
-            {/* Scrubber thumb */}
+            {/* Scrubber thumb - always visible on mobile, hover on desktop */}
             <div 
-              className="absolute w-3 h-3 rounded-full bg-[#c9a84c] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10"
+              className="absolute w-3 h-3 rounded-full bg-[#c9a84c] opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus:opacity-100 transition-opacity pointer-events-none z-10 shadow-[0_0_8px_rgba(201,168,76,0.6)]"
               style={{ left: `${duration > 0 ? (currentTime / duration) * 100 : 0}%`, transform: 'translateX(-50%)' }}
             />
           </div>
@@ -479,8 +684,9 @@ export function VideoPlayer() {
           {/* Mute/Unmute button */}
           <button
             onClick={toggleMute}
-            className="text-[#c9a84c] hover:text-[#d4b55c] transition-colors"
+            className="text-[#c9a84c] hover:text-[#d4b55c] transition-colors touch-none focus:outline-none focus:ring-2 focus:ring-[#c9a84c] rounded"
             aria-label={isMuted ? "Unmute" : "Mute"}
+            type="button"
           >
             {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
           </button>
@@ -488,8 +694,9 @@ export function VideoPlayer() {
           {/* Fullscreen button */}
           <button
             onClick={toggleFullscreen}
-            className="text-[#c9a84c] hover:text-[#d4b55c] transition-colors"
+            className="text-[#c9a84c] hover:text-[#d4b55c] transition-colors touch-none focus:outline-none focus:ring-2 focus:ring-[#c9a84c] rounded"
             aria-label="Fullscreen"
+            type="button"
           >
             <Maximize size={18} />
           </button>

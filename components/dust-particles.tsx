@@ -18,6 +18,7 @@ export function DustParticles() {
     const resize = () => {
       canvas.width = window.innerWidth
       canvas.height = window.innerHeight
+      createParticles()
     }
 
     const createParticles = () => {
@@ -61,13 +62,9 @@ export function DustParticles() {
     }
 
     resize()
-    createParticles()
     animate()
 
-    window.addEventListener("resize", () => {
-      resize()
-      createParticles()
-    })
+    window.addEventListener("resize", resize)
 
     return () => {
       cancelAnimationFrame(animationId)

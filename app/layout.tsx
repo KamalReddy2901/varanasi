@@ -16,6 +16,25 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'VARANASI | Experience The Formats',
   description: 'An SS Rajamouli Film - Experience the epic in multiple formats. IMAX, 70mm, and beyond.',
+  openGraph: {
+    title: 'VARANASI | Experience The Formats',
+    description: 'An SS Rajamouli Film - Experience the epic in multiple formats. IMAX, 70mm, and beyond.',
+    type: 'website',
+    images: [
+      {
+        url: '/varanasi-logo.png',
+        width: 1200,
+        height: 630,
+        alt: 'Varanasi - SS Rajamouli Film',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'VARANASI | Experience The Formats',
+    description: 'An SS Rajamouli Film - Experience the epic in multiple formats. IMAX, 70mm, and beyond.',
+    images: ['/varanasi-logo.png'],
+  },
   icons: {
     icon: '/icon.svg',
     apple: '/icon.svg',

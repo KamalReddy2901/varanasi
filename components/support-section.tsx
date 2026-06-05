@@ -56,6 +56,8 @@ export function SupportSection() {
                 width={280}
                 height={350}
                 className="rounded-lg shadow-lg"
+                priority
+                quality={95}
               />
             </div>
           </div>
