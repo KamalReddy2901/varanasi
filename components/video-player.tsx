@@ -601,16 +601,21 @@ export function VideoPlayer() {
     const isSeekBar = target.closest('[data-seek-bar]')
     
     if (!isControlBar && !isPlayButton && !isSeekBar) {
-      // If it's a touch event, show/hide controls
+      // If it's a touch event, toggle controls visibility
       if (e.type === 'touchstart') {
-        setShowControls(prev => !prev)
+        const newControlsState = !showControls
+        setShowControls(newControlsState)
+        
+        // Clear any existing timer
         if (hideControlsTimeoutRef.current) {
           clearTimeout(hideControlsTimeoutRef.current)
         }
-        if (isPlaying) {
+        
+        // If controls are now shown and video is playing, auto-hide after 3 seconds
+        if (newControlsState && isPlaying) {
           hideControlsTimeoutRef.current = setTimeout(() => {
             setShowControls(false)
-          }, 4000)
+          }, 3000)
         }
       } 
       // If it's a click event (desktop), toggle play/pause
@@ -882,7 +887,18 @@ export function VideoPlayer() {
             pointerEvents: showControls ? 'auto' : 'none'
           }}
           onMouseMove={handleMouseMove}
-          onTouchStart={(e) => e.stopPropagation()}
+          onTouchStart={(e) => {
+            e.stopPropagation()
+            // Reset auto-hide timer when touching controls
+            if (hideControlsTimeoutRef.current) {
+              clearTimeout(hideControlsTimeoutRef.current)
+            }
+            if (isPlaying) {
+              hideControlsTimeoutRef.current = setTimeout(() => {
+                setShowControls(false)
+              }, 3000)
+            }
+          }}
         >
           {/* Play/Pause button */}
           <button

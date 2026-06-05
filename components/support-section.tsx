@@ -33,7 +33,7 @@ export function SupportSection() {
           Support the Developer
         </h2>
         
-        <p className="text-[#e8e0d0]/80 font-sans text-xs sm:text-sm max-w-md px-4 whitespace-nowrap">
+        <p className="text-[#e8e0d0]/80 font-sans text-xs sm:text-sm max-w-md px-4 sm:whitespace-nowrap">
           If you find this project interesting, consider supporting the developer.
         </p>
 
@@ -52,9 +52,14 @@ export function SupportSection() {
           </button>
         </div>
 
-        <p className="text-[#e8e0d0]/70 font-sans text-xs italic whitespace-nowrap">
-          Every contribution helps keep this free & updated • I'm just a student ✌️
-        </p>
+        <div className="flex flex-col items-center gap-0.5">
+          <p className="text-[#e8e0d0]/70 font-sans text-xs italic sm:whitespace-nowrap">
+            Every contribution helps keep this free & updated.
+          </p>
+          <p className="text-[#e8e0d0]/70 font-sans text-xs italic">
+            (PS: I'm just a student ✌️)
+          </p>
+        </div>
       </div>
     </section>
   )
