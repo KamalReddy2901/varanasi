@@ -511,8 +511,11 @@ export function VideoPlayer() {
           <button
             key={format.id}
             type="button"
-            onClick={() => handleFormatChange(format)}
-            className={`px-3 md:px-4 py-2 md:py-2.5 font-serif text-[10px] md:text-xs tracking-[0.15em] uppercase transition-all duration-200 ease-out border focus:outline-none focus:ring-2 focus:ring-[#c9a84c] focus:ring-offset-2 focus:ring-offset-[#0a0806] ${
+            onClick={(e) => {
+              handleFormatChange(format)
+              e.currentTarget.blur() // Remove focus after click
+            }}
+            className={`px-3 md:px-4 py-2 md:py-2.5 font-serif text-[10px] md:text-xs tracking-[0.15em] uppercase transition-all duration-200 ease-out border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a84c] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0806] ${
               selectedFormat.id === format.id
                 ? "bg-[#c9a84c] text-[#0a0806] border-[#c9a84c]"
                 : "bg-transparent text-[#c9a84c] border-[#c9a84c]/50 hover:shadow-[0_0_15px_rgba(201,168,76,0.3)]"
@@ -613,7 +616,7 @@ export function VideoPlayer() {
               
               {/* Retry Button */}
               <button
-                onClick={() => {
+                onClick={(e) => {
                   setHasError(false)
                   setIsLoading(true)
                   setRetryCount(0)
@@ -623,8 +626,9 @@ export function VideoPlayer() {
                       setShowPlayButton(true)
                     })
                   }
+                  e.currentTarget.blur()
                 }}
-                className="mt-2 px-8 py-2.5 font-serif text-[#c9a84c] text-sm tracking-[0.15em] uppercase border border-[#c9a84c] bg-transparent hover:bg-[#c9a84c] hover:text-[#0a0806] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#c9a84c] focus:ring-offset-2 focus:ring-offset-[#0a0806]"
+                className="mt-2 px-8 py-2.5 font-serif text-[#c9a84c] text-sm tracking-[0.15em] uppercase border border-[#c9a84c] bg-transparent hover:bg-[#c9a84c] hover:text-[#0a0806] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a84c] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0806]"
                 type="button"
               >
                 Retry
@@ -679,8 +683,11 @@ export function VideoPlayer() {
         >
           {/* Play/Pause button */}
           <button
-            onClick={togglePlayPause}
-            className="text-[#c9a84c] hover:text-[#d4b55c] transition-colors touch-none focus:outline-none focus:ring-2 focus:ring-[#c9a84c] rounded"
+            onClick={(e) => {
+              togglePlayPause()
+              e.currentTarget.blur()
+            }}
+            className="text-[#c9a84c] hover:text-[#d4b55c] transition-colors touch-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a84c] rounded"
             aria-label={isPlaying ? "Pause" : "Play"}
             type="button"
           >
@@ -738,8 +745,11 @@ export function VideoPlayer() {
 
           {/* Mute/Unmute button */}
           <button
-            onClick={toggleMute}
-            className="text-[#c9a84c] hover:text-[#d4b55c] transition-colors touch-none focus:outline-none focus:ring-2 focus:ring-[#c9a84c] rounded"
+            onClick={(e) => {
+              toggleMute()
+              e.currentTarget.blur()
+            }}
+            className="text-[#c9a84c] hover:text-[#d4b55c] transition-colors touch-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a84c] rounded"
             aria-label={isMuted ? "Unmute" : "Mute"}
             type="button"
           >
@@ -748,8 +758,11 @@ export function VideoPlayer() {
 
           {/* Fullscreen button */}
           <button
-            onClick={toggleFullscreen}
-            className="text-[#c9a84c] hover:text-[#d4b55c] transition-colors touch-none focus:outline-none focus:ring-2 focus:ring-[#c9a84c] rounded"
+            onClick={(e) => {
+              toggleFullscreen()
+              e.currentTarget.blur()
+            }}
+            className="text-[#c9a84c] hover:text-[#d4b55c] transition-colors touch-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a84c] rounded"
             aria-label="Fullscreen"
             type="button"
           >
