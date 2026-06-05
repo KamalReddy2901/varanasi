@@ -354,8 +354,8 @@ export function VideoPlayer() {
         
         hls.on(Hls.Events.LEVEL_SWITCHED, (event, data) => {
           console.log(`Quality switched to: ${getQualityLabel(hls.levels[data.level]?.height)} (level ${data.level})`)
-          // Update UI to reflect actual current quality
-          setCurrentQuality(hls.currentLevel)
+          // Note: We don't update the UI here - only manual user selections update the UI
+          // This way, "Auto" stays selected even as HLS.js switches quality in the background
         })
         
         // Monitor buffering to prevent stalls during quality changes
