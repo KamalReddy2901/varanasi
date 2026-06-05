@@ -185,13 +185,12 @@ export function VideoPlayer() {
     const videoElement = e.currentTarget
     console.error('Video loading error:', videoElement.error)
     
-    // For iOS, often the video isn't really broken, just needs user interaction
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
     
     if (isIOS) {
-      // On iOS, don't show full error - just require play button interaction
+      // On iOS, show error immediately
       setIsLoading(false)
-      setShowPlayButton(true)
+      setHasError(true)
       setIsPlaying(false)
     } else {
       // Only show error after retries on non-iOS
@@ -241,28 +240,22 @@ export function VideoPlayer() {
     
     const attemptAutoplay = async () => {
       if (videoRef.current) {
-        // Set iOS-specific attributes via ref
+        // On iOS, show error immediately due to codec issues
+        if (isIOS) {
+          setIsLoading(false)
+          setHasError(true)
+          return
+        }
+        
+        // Set video attributes for other platforms
         const video = videoRef.current as any
         video.setAttribute('playsinline', '')
-        video.setAttribute('webkit-playsinline', '')
         video.setAttribute('x-webkit-airplay', 'allow')
-        video.setAttribute('x5-video-player-type', 'h5')
-        video.setAttribute('x5-video-player-fullscreen', 'true')
         
         // Force load metadata
         videoRef.current.load()
         
-        // iOS needs more time to prepare video
-        const delay = isIOS ? 500 : 200
-        await new Promise(resolve => setTimeout(resolve, delay))
-        
-        // On iOS, always show play button instead of autoplay
-        if (isIOS) {
-          setIsLoading(false)
-          setShowPlayButton(true)
-          setIsPlaying(false)
-          return
-        }
+        await new Promise(resolve => setTimeout(resolve, 200))
         
         try {
           await videoRef.current.play()
@@ -634,37 +627,55 @@ export function VideoPlayer() {
                   className="text-[#c9a84c] text-base md:text-lg tracking-wide leading-relaxed"
                   style={{ fontFamily: 'Cinzel, serif' }}
                 >
-                  Sorry iPhone users...
-                  <br />
-                  Currently unavailable here :(
+                  {/iPad|iPhone|iPod/.test(navigator.userAgent) ? (
+                    <>
+                      Sorry iPhone/iPad users...
+                      <br />
+                      Video codec not supported :(
+                    </>
+                  ) : (
+                    <>
+                      Video unavailable
+                    </>
+                  )}
                 </h3>
                 
                 <p 
-                  className="text-[#e8e0d0]/60 text-xs md:text-sm leading-relaxed"
+                  className="text-[#e8e0d0]/70 text-xs md:text-sm leading-relaxed"
                 >
-                  Please check your connection or try refreshing the page
+                  {/iPad|iPhone|iPod/.test(navigator.userAgent) ? (
+                    <>
+                      Safari doesn't support this video format. Please try viewing on a desktop browser or Android device.
+                    </>
+                  ) : (
+                    <>
+                      Please check your connection or try refreshing the page
+                    </>
+                  )}
                 </p>
               </div>
               
-              {/* Retry Button */}
-              <button
-                onClick={(e) => {
-                  setHasError(false)
-                  setIsLoading(true)
-                  setRetryCount(0)
-                  if (videoRef.current) {
-                    videoRef.current.load()
-                    videoRef.current.play().catch(() => {
-                      setShowPlayButton(true)
-                    })
-                  }
-                  e.currentTarget.blur()
-                }}
-                className="mt-2 px-8 py-2.5 font-serif text-[#c9a84c] text-sm tracking-[0.15em] uppercase border border-[#c9a84c] bg-transparent hover:bg-[#c9a84c] hover:text-[#0a0806] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a84c] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0806]"
-                type="button"
-              >
-                Retry
-              </button>
+              {/* Retry Button - only show for non-iOS */}
+              {!/iPad|iPhone|iPod/.test(navigator.userAgent) && (
+                <button
+                  onClick={(e) => {
+                    setHasError(false)
+                    setIsLoading(true)
+                    setRetryCount(0)
+                    if (videoRef.current) {
+                      videoRef.current.load()
+                      videoRef.current.play().catch(() => {
+                        setShowPlayButton(true)
+                      })
+                    }
+                    e.currentTarget.blur()
+                  }}
+                  className="mt-2 px-8 py-2.5 font-serif text-[#c9a84c] text-sm tracking-[0.15em] uppercase border border-[#c9a84c] bg-transparent hover:bg-[#c9a84c] hover:text-[#0a0806] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a84c] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0806]"
+                  type="button"
+                >
+                  Retry
+                </button>
+              )}
             </div>
           </div>
         )}
