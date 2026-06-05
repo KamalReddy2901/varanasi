@@ -10,7 +10,7 @@ export function SupportSection() {
     const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent)
     
     if (isMobile) {
-      window.location.href = "upi://pay?pa=kamalreddi2901@okaxis&pn=Kamal%20Reddy&tn=Jai%20Babu&cu=INR"
+      window.location.href = "upi://pay?pa=kamalreddi2901@okaxis&pn=Varanasiformats&cu=INR"
     } else {
       setShowQR(!showQR)
     }
