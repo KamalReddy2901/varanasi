@@ -119,34 +119,61 @@ export function VideoPlayer() {
     }
   }
 
+  const handleLoadedData = () => {
+    // Video has loaded enough data to start playing
+    setIsLoading(false)
+  }
+
   const handleCanPlay = () => {
+    // Video can play through without buffering
     setIsLoading(false)
   }
 
   const handleWaiting = () => {
+    // Video is buffering
     setIsLoading(true)
   }
 
   const handlePlaying = () => {
+    // Video has started playing
     setIsLoading(false)
   }
 
+  const handleError = (e: React.SyntheticEvent<HTMLVideoElement, Event>) => {
+    // Don't log error, just hide loading state
+    setIsLoading(false)
+  }
+
+  // Fallback: if video takes too long, hide loading after 5 seconds
+  useEffect(() => {
+    const fallbackTimer = setTimeout(() => {
+      if (isLoading) {
+        setIsLoading(false)
+      }
+    }, 5000)
+
+    return () => clearTimeout(fallbackTimer)
+  }, [isLoading])
+
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (videoRef.current && e.currentTarget) {
+    if (videoRef.current && e.currentTarget && duration > 0) {
       const rect = e.currentTarget.getBoundingClientRect()
       const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
-      videoRef.current.currentTime = pos * duration
-      setCurrentTime(pos * duration)
+      const newTime = pos * duration
+      videoRef.current.currentTime = newTime
+      setCurrentTime(newTime)
     }
   }
 
   const handleSeekMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault()
     setIsDragging(true)
     handleSeek(e)
   }
 
   const handleSeekMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (isDragging) {
+      e.preventDefault()
       handleSeek(e)
     }
   }
@@ -160,11 +187,26 @@ export function VideoPlayer() {
       setIsDragging(false)
     }
     
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (isDragging && videoRef.current && duration > 0) {
+        const seekBar = document.querySelector('[data-seek-bar]') as HTMLDivElement
+        if (seekBar) {
+          const rect = seekBar.getBoundingClientRect()
+          const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
+          const newTime = pos * duration
+          videoRef.current.currentTime = newTime
+          setCurrentTime(newTime)
+        }
+      }
+    }
+    
     window.addEventListener('mouseup', handleGlobalMouseUp)
+    window.addEventListener('mousemove', handleGlobalMouseMove)
     return () => {
       window.removeEventListener('mouseup', handleGlobalMouseUp)
+      window.removeEventListener('mousemove', handleGlobalMouseMove)
     }
-  }, [])
+  }, [isDragging, duration])
 
   const formatTime = (time: number) => {
     const minutes = Math.floor(time / 60)
@@ -227,9 +269,11 @@ export function VideoPlayer() {
           src="https://pub-80ef97260963441fbad8cf84c5193379.r2.dev/varanasi-trailer.mp4"
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
+          onLoadedData={handleLoadedData}
           onCanPlay={handleCanPlay}
           onWaiting={handleWaiting}
           onPlaying={handlePlaying}
+          onError={handleError}
           onClick={handleVideoClick}
         />
         {/* Vignette overlay */}
@@ -292,21 +336,20 @@ export function VideoPlayer() {
 
           {/* Seek bar */}
           <div 
+            data-seek-bar
             className="flex-grow h-1 rounded-full cursor-pointer group relative"
             style={{ background: 'rgba(201,168,76,0.25)' }}
             onMouseDown={handleSeekMouseDown}
-            onMouseMove={handleSeekMouseMove}
-            onMouseUp={handleSeekMouseUp}
           >
             {/* Played portion */}
             <div 
               className="h-full rounded-full bg-[#c9a84c] pointer-events-none"
-              style={{ width: `${(currentTime / duration) * 100}%` }}
+              style={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }}
             />
             {/* Scrubber thumb */}
             <div 
               className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-[#c9a84c] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
-              style={{ left: `${(currentTime / duration) * 100}%`, transform: 'translate(-50%, -50%)' }}
+              style={{ left: `${duration > 0 ? (currentTime / duration) * 100 : 0}%`, transform: 'translate(-50%, -50%)' }}
             />
           </div>
 
@@ -336,12 +379,12 @@ export function VideoPlayer() {
       </div>
 
       {/* Format Buttons */}
-      <div className="flex flex-wrap justify-center gap-3 px-4 max-w-[1200px]">
+      <div className="flex flex-wrap justify-center gap-2 md:gap-3 px-4 max-w-[1200px]">
         {formats.map((format) => (
           <button
             key={format.id}
             onClick={() => handleFormatChange(format)}
-            className={`px-4 py-2.5 font-serif text-xs tracking-[0.15em] uppercase transition-all duration-200 ease-out border ${
+            className={`px-3 md:px-4 py-2 md:py-2.5 font-serif text-[10px] md:text-xs tracking-[0.15em] uppercase transition-all duration-200 ease-out border ${
               selectedFormat.id === format.id
                 ? "bg-[#c9a84c] text-[#0a0806] border-[#c9a84c]"
                 : "bg-transparent text-[#c9a84c] border-[#c9a84c]/50 hover:shadow-[0_0_15px_rgba(201,168,76,0.3)]"
@@ -357,7 +400,7 @@ export function VideoPlayer() {
         key={descriptionKey}
         className="max-w-[600px] px-6 text-center animate-in fade-in duration-300"
       >
-        <p className="text-[#e8e0d0] font-serif italic text-sm leading-relaxed">
+        <p className="text-[#e8e0d0] font-serif italic text-xs md:text-sm leading-relaxed">
           {formatDescriptions[selectedFormat.id]}
         </p>
       </div>

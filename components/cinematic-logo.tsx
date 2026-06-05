@@ -41,7 +41,7 @@ export function CinematicLogo() {
         style={{
           mixBlendMode: "screen",
           filter:
-            "invert(1) sepia(1) saturate(3.2) hue-rotate(-8deg) brightness(1.08) contrast(1.02) drop-shadow(0 0 40px rgba(201, 168, 76, 0.6)) drop-shadow(0 0 80px rgba(180, 100, 10, 0.3))",
+            "invert(1) sepia(0.6) saturate(2) hue-rotate(5deg) brightness(0.9) contrast(1.05) drop-shadow(0 0 40px rgba(201, 168, 76, 0.5)) drop-shadow(0 0 80px rgba(201, 168, 76, 0.2))",
         }}
         priority
       />

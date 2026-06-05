@@ -22,16 +22,17 @@ export function DustParticles() {
 
     const createParticles = () => {
       particles = []
-      const particleCount = Math.floor((canvas.width * canvas.height) / 15000)
+      // Increased particle count for more visible effect
+      const particleCount = Math.floor((canvas.width * canvas.height) / 8000)
       
       for (let i = 0; i < particleCount; i++) {
         particles.push({
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
-          size: Math.random() * 1.5 + 0.5,
-          speedX: (Math.random() - 0.5) * 0.3,
-          speedY: Math.random() * 0.2 + 0.1,
-          opacity: Math.random() * 0.3 + 0.1,
+          size: Math.random() * 2.5 + 0.5, // Larger particles
+          speedX: (Math.random() - 0.5) * 0.4,
+          speedY: Math.random() * 0.3 + 0.15,
+          opacity: Math.random() * 0.5 + 0.2, // More visible opacity
         })
       }
     }
@@ -77,7 +78,7 @@ export function DustParticles() {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 pointer-events-none z-0 opacity-50"
+      className="fixed inset-0 pointer-events-none z-0 opacity-70"
     />
   )
 }
