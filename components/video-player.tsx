@@ -96,29 +96,21 @@ export function VideoPlayer() {
     if (hlsRef.current) {
       const hls = hlsRef.current
       
-      // Save current playback state
-      const wasPlaying = !videoRef.current?.paused
-      
       if (qualityIndex === -1) {
-        // Auto quality - enable ABR
-        hls.currentLevel = -1
-        console.log('Switched to auto quality')
+        // Auto quality - enable ABR with smooth transition
+        hls.nextLevel = -1
+        console.log('Switching to auto quality (smooth transition)')
       } else {
-        // Manual quality - disable ABR and set specific level
-        hls.currentLevel = qualityIndex
-        console.log(`Switched to quality level ${qualityIndex} (${getQualityLabel(qualities[qualityIndex]?.height)})`)
+        // Manual quality - use nextLevel for smooth transition
+        // This will continue playing current quality while buffering the new one
+        hls.nextLevel = qualityIndex
+        console.log(`Switching to quality level ${qualityIndex} (${getQualityLabel(qualities[qualityIndex]?.height)}) - smooth transition`)
       }
       
-      // HLS.js will handle the transition smoothly without pausing
-      // Just ensure playback continues if it was playing
-      if (wasPlaying && videoRef.current?.paused) {
-        videoRef.current.play().catch(err => {
-          console.log('Resume after quality change failed:', err)
-        })
-      }
+      // Update UI state immediately to show selection
+      setCurrentQuality(qualityIndex)
     }
     
-    setCurrentQuality(qualityIndex)
     setShowQualityMenu(false)
   }
   
@@ -295,6 +287,13 @@ export function VideoPlayer() {
           abrBandWidthFactor: 0.95, // Safety factor for quality selection
           abrBandWidthUpFactor: 0.7, // Be conservative when upgrading quality
           startLevel: -1, // Start with auto quality
+          // Enable smooth quality switching without pause
+          // HLS.js will buffer the new quality before switching
+          capLevelToPlayerSize: false, // Allow any quality selection
+          // Fragment loading settings for smooth transitions
+          fragLoadingTimeOut: 20000,
+          manifestLoadingTimeOut: 10000,
+          levelLoadingTimeOut: 10000,
         })
         
         hlsRef.current = hls
@@ -324,6 +323,17 @@ export function VideoPlayer() {
               setShowPlayButton(true)
               setIsPlaying(false)
             })
+        })
+        
+        // Track level switching for smooth quality changes
+        hls.on(Hls.Events.LEVEL_SWITCHING, (event, data) => {
+          console.log(`Quality switching to: ${getQualityLabel(hls.levels[data.level]?.height)} (level ${data.level})`)
+        })
+        
+        hls.on(Hls.Events.LEVEL_SWITCHED, (event, data) => {
+          console.log(`Quality switched to: ${getQualityLabel(hls.levels[data.level]?.height)} (level ${data.level})`)
+          // Update UI to reflect actual current quality
+          setCurrentQuality(hls.currentLevel)
         })
         
         hls.on(Hls.Events.ERROR, (event, data) => {
