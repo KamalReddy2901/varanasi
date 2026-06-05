@@ -1,7 +1,8 @@
 "use client"
 
 import { useRef, useState, useEffect } from "react"
-import { Play, Pause, Volume2, VolumeX, Maximize } from "lucide-react"
+import { Play, Pause, Volume2, VolumeX, Maximize, Settings } from "lucide-react"
+import Hls from "hls.js"
 
 interface Format {
   id: string
@@ -47,6 +48,12 @@ export function VideoPlayer() {
   const [hasError, setHasError] = useState(false)
   const [retryCount, setRetryCount] = useState(0)
   const hideControlsTimeoutRef = useRef<NodeJS.Timeout>()
+  
+  // HLS and quality selection state
+  const hlsRef = useRef<Hls | null>(null)
+  const [qualities, setQualities] = useState<Array<{ height: number; index: number }>>([])
+  const [currentQuality, setCurrentQuality] = useState<number>(-1) // -1 means auto
+  const [showQualityMenu, setShowQualityMenu] = useState(false)
 
   const updateDimensions = () => {
     // Reserve 200px for hero section above + format buttons below (reduced from 280px for more immersive size)
@@ -72,20 +79,55 @@ export function VideoPlayer() {
 
   const handleFormatChange = (format: Format) => {
     const wasPlaying = isPlaying
+    const currentTime = videoRef.current?.currentTime || 0
     
     setSelectedFormat(format)
     setGlowPulse(true)
     setDescriptionKey(prev => prev + 1)
     setTimeout(() => setGlowPulse(false), 600)
     
-    // Resume playback after format change on iOS
-    if (wasPlaying && videoRef.current) {
-      setTimeout(() => {
-        videoRef.current?.play().catch(() => {
-          setShowPlayButton(true)
-          setIsPlaying(false)
-        })
-      }, 100)
+    // Preserve playback position after format change
+    if (videoRef.current) {
+      videoRef.current.currentTime = currentTime
+      if (wasPlaying) {
+        setTimeout(() => {
+          videoRef.current?.play().catch(() => {
+            setShowPlayButton(true)
+            setIsPlaying(false)
+          })
+        }, 100)
+      }
+    }
+  }
+  
+  const handleQualityChange = (qualityIndex: number) => {
+    if (!hlsRef.current && qualityIndex !== -1) {
+      // Native HLS (Safari) - can't change quality programmatically
+      console.log('Quality selection not available on this browser')
+      return
+    }
+    
+    if (hlsRef.current) {
+      if (qualityIndex === -1) {
+        // Auto quality
+        hlsRef.current.currentLevel = -1
+      } else {
+        // Manual quality
+        hlsRef.current.currentLevel = qualityIndex
+      }
+    }
+    
+    setCurrentQuality(qualityIndex)
+    setShowQualityMenu(false)
+  }
+  
+  const getQualityLabel = (height: number) => {
+    switch (height) {
+      case 2160: return '2160p'
+      case 1080: return '1080p'
+      case 720: return '720p'
+      case 480: return '480p'
+      default: return `${height}p`
     }
   }
 
@@ -225,33 +267,111 @@ export function VideoPlayer() {
     }
   }
 
-  // Attempt autoplay
+  // Attempt autoplay and setup HLS
   useEffect(() => {
+    const videoElement = videoRef.current
+    if (!videoElement) return
+
+    // HLS source URL - replace with your R2 master.m3u8 URL
+    const hlsSource = "https://pub-36eeef5229fc41e1bb5e30088592f214.r2.dev/master.m3u8"
+    
     const attemptAutoplay = async () => {
-      if (videoRef.current) {
-        // Set video attributes
-        const video = videoRef.current as any
-        video.setAttribute('playsinline', '')
-        video.setAttribute('x-webkit-airplay', 'allow')
+      // Check if HLS is supported
+      if (Hls.isSupported()) {
+        const hls = new Hls({
+          enableWorker: true,
+          lowLatencyMode: false,
+          backBufferLength: 90,
+        })
         
-        // Force load metadata
-        videoRef.current.load()
+        hlsRef.current = hls
+        hls.loadSource(hlsSource)
+        hls.attachMedia(videoElement)
         
-        await new Promise(resolve => setTimeout(resolve, 200))
+        hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
+          console.log('HLS manifest loaded, levels:', data.levels)
+          
+          // Extract quality levels
+          const qualityLevels = data.levels.map((level, index) => ({
+            height: level.height,
+            index: index
+          }))
+          setQualities(qualityLevels)
+          setIsLoading(false)
+          
+          // Try autoplay
+          videoElement.play()
+            .then(() => {
+              setIsPlaying(true)
+              setShowPlayButton(false)
+            })
+            .catch((err) => {
+              console.log('Autoplay blocked:', err)
+              setShowPlayButton(true)
+              setIsPlaying(false)
+            })
+        })
         
-        try {
-          await videoRef.current.play()
-          setIsPlaying(true)
-          setShowPlayButton(false)
-        } catch (err) {
-          console.log('Autoplay blocked, user interaction required')
-          setShowPlayButton(true)
-          setIsPlaying(false)
-        }
+        hls.on(Hls.Events.ERROR, (event, data) => {
+          console.error('HLS error:', data)
+          if (data.fatal) {
+            switch (data.type) {
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                console.log('Network error, trying to recover')
+                hls.startLoad()
+                break
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                console.log('Media error, trying to recover')
+                hls.recoverMediaError()
+                break
+              default:
+                setHasError(true)
+                setIsLoading(false)
+                break
+            }
+          }
+        })
+        
+      } else if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
+        // Native HLS support (Safari)
+        videoElement.src = hlsSource
+        videoElement.addEventListener('loadedmetadata', () => {
+          setIsLoading(false)
+          // Safari doesn't expose quality levels programmatically easily
+          // but we can show a simplified quality menu
+          setQualities([
+            { height: 2160, index: 0 },
+            { height: 1080, index: 1 },
+            { height: 720, index: 2 },
+            { height: 480, index: 3 },
+          ])
+        })
+        
+        videoElement.play()
+          .then(() => {
+            setIsPlaying(true)
+            setShowPlayButton(false)
+          })
+          .catch((err) => {
+            console.log('Autoplay blocked:', err)
+            setShowPlayButton(true)
+            setIsPlaying(false)
+          })
+      } else {
+        // Fallback to regular MP4 if HLS not supported
+        setHasError(true)
+        setIsLoading(false)
       }
     }
     
     attemptAutoplay()
+    
+    // Cleanup
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy()
+      }
+    }
   }, [])
 
   // Fallback: if video takes too long, hide loading after 5 seconds
@@ -556,9 +676,7 @@ export function VideoPlayer() {
           loop
           muted
           playsInline
-          webkit-playsinline="true"
           preload="auto"
-          crossOrigin="anonymous"
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
           onLoadedData={handleLoadedData}
@@ -566,14 +684,7 @@ export function VideoPlayer() {
           onWaiting={handleWaiting}
           onPlaying={handlePlaying}
           onPause={handlePause}
-          onError={handleError}
-        >
-          <source 
-            src="https://pub-36eeef5229fc41e1bb5e30088592f214.r2.dev/2026-06-05_IMAX_2001457389091074506.mp4" 
-            type="video/mp4"
-          />
-          Your browser does not support the video tag.
-        </video>
+        />
         {/* Vignette overlay */}
         <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_100px_rgba(0,0,0,0.6)]" />
         
@@ -760,6 +871,65 @@ export function VideoPlayer() {
           >
             {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
           </button>
+
+          {/* Quality Settings */}
+          <div className="relative">
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setShowQualityMenu(!showQualityMenu)
+                e.currentTarget.blur()
+              }}
+              className="text-[#c9a84c] hover:text-[#d4b55c] transition-colors touch-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a84c] rounded"
+              aria-label="Quality settings"
+              type="button"
+            >
+              <Settings size={18} />
+            </button>
+            
+            {/* Quality menu */}
+            {showQualityMenu && (
+              <div 
+                className="absolute bottom-full right-0 mb-2 bg-[#0a0806] border border-[#c9a84c]/30 rounded shadow-lg min-w-[120px] z-50"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="py-1">
+                  <div className="px-3 py-1.5 text-[#c9a84c]/60 text-xs font-serif tracking-wider uppercase border-b border-[#c9a84c]/20">
+                    Quality
+                  </div>
+                  
+                  {/* Auto option */}
+                  <button
+                    onClick={() => handleQualityChange(-1)}
+                    className={`w-full px-3 py-2 text-left text-sm transition-colors ${
+                      currentQuality === -1
+                        ? 'text-[#c9a84c] bg-[#c9a84c]/10'
+                        : 'text-[#e8e0d0] hover:bg-[#c9a84c]/5'
+                    }`}
+                    type="button"
+                  >
+                    Auto {currentQuality === -1 && '✓'}
+                  </button>
+                  
+                  {/* Quality options */}
+                  {qualities.map((quality) => (
+                    <button
+                      key={quality.index}
+                      onClick={() => handleQualityChange(quality.index)}
+                      className={`w-full px-3 py-2 text-left text-sm transition-colors ${
+                        currentQuality === quality.index
+                          ? 'text-[#c9a84c] bg-[#c9a84c]/10'
+                          : 'text-[#e8e0d0] hover:bg-[#c9a84c]/5'
+                      }`}
+                      type="button"
+                    >
+                      {getQualityLabel(quality.height)} {currentQuality === quality.index && '✓'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Fullscreen button */}
           <button

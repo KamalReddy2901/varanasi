@@ -14,3 +14,7 @@ node_modules
 .next/
 out/
 .DS_Store
+
+# HLS output
+hls_output/
+input.mp4
