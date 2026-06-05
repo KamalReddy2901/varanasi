@@ -401,6 +401,7 @@ export function VideoPlayer() {
             className="flex-grow h-3 md:h-1 flex items-center cursor-pointer group relative"
             onMouseDown={handleSeekMouseDown}
             onMouseMove={handleSeekMouseMove}
+            onMouseUp={handleSeekMouseUp}
             onTouchStart={handleSeekTouchStart}
             onTouchMove={handleSeekTouchMove}
             onTouchEnd={handleSeekTouchEnd}
