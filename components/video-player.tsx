@@ -20,7 +20,7 @@ const formats: Format[] = [
 ]
 
 const formatDescriptions: Record<string, string> = {
-  "1.43": `Babu in 1.43:1 ratio — tallest IMAX ratio lo darshanam cheskondi. The complete frame. Rajamouli shot Varanasi taller than any Indian film before it — so the ghats reach the sky and the river swallows the earth. This is the image as he intended it. Nothing cropped. Nothing lost.`,
+  "1.43": `Babu in 1.43:1 ratio — tallest IMAX ratio. The complete frame. Rajamouli shot Varanasi taller than any Indian film before it — so the ghats reach the sky and the river swallows the earth. This is the image as he intended it. Nothing cropped. Nothing lost.`,
   "1.90": `The IMAX digital experience — wider than the eye expects, still taller than convention allows. The scale of this Magnus Opus fills the screen from edge to edge. Most of the world will see Varanasi this way.`,
   "2.20": `The format of Lawrence of Arabia. Of Spartacus. Rajamouli always said Indian cinema deserved that legacy. In 70mm, Varanasi earns its place among the epics of cinema history.`,
   "1.85": `The standard widescreen ratio — familiar, intimate by comparison. Even constrained to this frame, Varanasi refuses to feel small. Some films are simply too large for any box.`,
