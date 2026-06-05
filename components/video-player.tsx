@@ -45,6 +45,7 @@ export function VideoPlayer() {
   const [isLoading, setIsLoading] = useState(true)
   const [showPlayButton, setShowPlayButton] = useState(false)
   const [hasError, setHasError] = useState(false)
+  const [retryCount, setRetryCount] = useState(0)
   const hideControlsTimeoutRef = useRef<NodeJS.Timeout>()
 
   const updateDimensions = () => {
@@ -181,9 +182,25 @@ export function VideoPlayer() {
   }
 
   const handleError = (e: React.SyntheticEvent<HTMLVideoElement, Event>) => {
-    console.error('Video loading error')
-    setIsLoading(false)
-    setHasError(true)
+    const videoElement = e.currentTarget
+    console.error('Video loading error:', videoElement.error)
+    
+    // Only show error after retries
+    if (retryCount < 2) {
+      console.log(`Retrying video load... (attempt ${retryCount + 1})`)
+      setRetryCount(prev => prev + 1)
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.load()
+          videoRef.current.play().catch(() => {
+            setShowPlayButton(true)
+          })
+        }
+      }, 1000)
+    } else {
+      setIsLoading(false)
+      setHasError(true)
+    }
   }
 
   const handlePlay = async () => {
@@ -529,7 +546,6 @@ export function VideoPlayer() {
           loop
           muted
           playsInline
-          crossOrigin="anonymous"
           preload="auto"
           src="https://pub-80ef97260963441fbad8cf84c5193379.r2.dev/varanasi-trailer.mp4"
           onTimeUpdate={handleTimeUpdate}
@@ -574,6 +590,23 @@ export function VideoPlayer() {
               >
                 Unable to load video. Please check your connection and try refreshing the page.
               </p>
+              <button
+                onClick={() => {
+                  setHasError(false)
+                  setIsLoading(true)
+                  setRetryCount(0)
+                  if (videoRef.current) {
+                    videoRef.current.load()
+                    videoRef.current.play().catch(() => {
+                      setShowPlayButton(true)
+                    })
+                  }
+                }}
+                className="px-6 py-2 font-serif text-[#c9a84c] text-sm tracking-[0.1em] uppercase border border-[#c9a84c] bg-transparent hover:bg-[#c9a84c] hover:text-[#0a0806] transition-all duration-200"
+                type="button"
+              >
+                Retry
+              </button>
             </div>
           </div>
         )}
