@@ -222,15 +222,17 @@ export function VideoPlayer() {
       if (videoRef.current) {
         // Set iOS-specific attributes via ref
         const video = videoRef.current as any
-        video.setAttribute('playsinline', 'true')
-        video.setAttribute('webkit-playsinline', 'true')
+        video.setAttribute('playsinline', '')
+        video.setAttribute('webkit-playsinline', '')
         video.setAttribute('x-webkit-airplay', 'allow')
+        video.setAttribute('x5-video-player-type', 'h5')
+        video.setAttribute('x5-video-player-fullscreen', 'true')
         
         // Force load metadata
         videoRef.current.load()
         
         // Small delay to ensure video is ready on iOS
-        await new Promise(resolve => setTimeout(resolve, 100))
+        await new Promise(resolve => setTimeout(resolve, 200))
         
         try {
           await videoRef.current.play()
@@ -547,7 +549,6 @@ export function VideoPlayer() {
           muted
           playsInline
           preload="auto"
-          src="https://pub-80ef97260963441fbad8cf84c5193379.r2.dev/varanasi-trailer.mp4"
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
           onLoadedData={handleLoadedData}
@@ -556,7 +557,13 @@ export function VideoPlayer() {
           onPlaying={handlePlaying}
           onPause={handlePause}
           onError={handleError}
-        />
+        >
+          <source 
+            src="https://pub-80ef97260963441fbad8cf84c5193379.r2.dev/varanasi-trailer.mp4" 
+            type="video/mp4"
+          />
+          Your browser does not support the video tag.
+        </video>
         {/* Vignette overlay */}
         <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_100px_rgba(0,0,0,0.6)]" />
         
