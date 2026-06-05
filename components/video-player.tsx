@@ -155,10 +155,10 @@ export function VideoPlayer() {
     return () => clearTimeout(fallbackTimer)
   }, [isLoading])
 
-  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (videoRef.current && e.currentTarget && duration > 0) {
-      const rect = e.currentTarget.getBoundingClientRect()
-      const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
+  const handleSeek = (clientX: number, element: HTMLDivElement) => {
+    if (videoRef.current && duration > 0) {
+      const rect = element.getBoundingClientRect()
+      const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
       const newTime = pos * duration
       videoRef.current.currentTime = newTime
       setCurrentTime(newTime)
@@ -168,13 +168,36 @@ export function VideoPlayer() {
   const handleSeekMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault()
     setIsDragging(true)
-    handleSeek(e)
+    if (e.currentTarget) {
+      handleSeek(e.clientX, e.currentTarget)
+    }
+  }
+
+  const handleSeekTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    setIsDragging(true)
+    if (e.currentTarget && e.touches[0]) {
+      handleSeek(e.touches[0].clientX, e.currentTarget)
+    }
+  }
+
+  const handleSeekTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (isDragging && e.currentTarget && e.touches[0]) {
+      e.preventDefault()
+      handleSeek(e.touches[0].clientX, e.currentTarget)
+    }
+  }
+
+  const handleSeekTouchEnd = () => {
+    setIsDragging(false)
   }
 
   const handleSeekMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (isDragging) {
       e.preventDefault()
-      handleSeek(e)
+      if (e.currentTarget) {
+        handleSeek(e.clientX, e.currentTarget)
+      }
     }
   }
 
@@ -184,6 +207,10 @@ export function VideoPlayer() {
 
   useEffect(() => {
     const handleGlobalMouseUp = () => {
+      setIsDragging(false)
+    }
+    
+    const handleGlobalTouchEnd = () => {
       setIsDragging(false)
     }
     
@@ -199,12 +226,29 @@ export function VideoPlayer() {
         }
       }
     }
+
+    const handleGlobalTouchMove = (e: TouchEvent) => {
+      if (isDragging && videoRef.current && duration > 0 && e.touches[0]) {
+        const seekBar = document.querySelector('[data-seek-bar]') as HTMLDivElement
+        if (seekBar) {
+          const rect = seekBar.getBoundingClientRect()
+          const pos = Math.max(0, Math.min(1, (e.touches[0].clientX - rect.left) / rect.width))
+          const newTime = pos * duration
+          videoRef.current.currentTime = newTime
+          setCurrentTime(newTime)
+        }
+      }
+    }
     
     window.addEventListener('mouseup', handleGlobalMouseUp)
     window.addEventListener('mousemove', handleGlobalMouseMove)
+    window.addEventListener('touchend', handleGlobalTouchEnd)
+    window.addEventListener('touchmove', handleGlobalTouchMove, { passive: false })
     return () => {
       window.removeEventListener('mouseup', handleGlobalMouseUp)
       window.removeEventListener('mousemove', handleGlobalMouseMove)
+      window.removeEventListener('touchend', handleGlobalTouchEnd)
+      window.removeEventListener('touchmove', handleGlobalTouchMove)
     }
   }, [isDragging, duration])
 
@@ -351,22 +395,30 @@ export function VideoPlayer() {
             {formatTime(currentTime)}
           </span>
 
-          {/* Seek bar */}
+          {/* Seek bar - larger hit area for mobile */}
           <div 
             data-seek-bar
-            className="flex-grow h-1 rounded-full cursor-pointer group relative"
-            style={{ background: 'rgba(201,168,76,0.25)' }}
+            className="flex-grow h-3 md:h-1 flex items-center cursor-pointer group relative"
             onMouseDown={handleSeekMouseDown}
+            onMouseMove={handleSeekMouseMove}
+            onTouchStart={handleSeekTouchStart}
+            onTouchMove={handleSeekTouchMove}
+            onTouchEnd={handleSeekTouchEnd}
           >
-            {/* Played portion */}
-            <div 
-              className="h-full rounded-full bg-[#c9a84c] pointer-events-none"
-              style={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }}
-            />
+            {/* Track background */}
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full h-1 rounded-full" style={{ background: 'rgba(201,168,76,0.25)' }}>
+                {/* Played portion */}
+                <div 
+                  className="h-full rounded-full bg-[#c9a84c] pointer-events-none"
+                  style={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }}
+                />
+              </div>
+            </div>
             {/* Scrubber thumb */}
             <div 
-              className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-[#c9a84c] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
-              style={{ left: `${duration > 0 ? (currentTime / duration) * 100 : 0}%`, transform: 'translate(-50%, -50%)' }}
+              className="absolute w-3 h-3 rounded-full bg-[#c9a84c] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10"
+              style={{ left: `${duration > 0 ? (currentTime / duration) * 100 : 0}%`, transform: 'translateX(-50%)' }}
             />
           </div>
 
