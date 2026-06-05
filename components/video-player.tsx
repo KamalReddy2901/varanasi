@@ -586,23 +586,32 @@ export function VideoPlayer() {
 
         {/* Error overlay */}
         {hasError && (
-          <div className="absolute inset-0 flex items-center justify-center bg-[#0a0806]/90 backdrop-blur-sm">
-            <div className="flex flex-col items-center gap-4 px-6 text-center">
-              <div className="w-12 h-12 border-2 border-red-500/50 rounded-full flex items-center justify-center">
-                <span className="text-red-500 text-2xl">⚠</span>
+          <div className="absolute inset-0 flex items-center justify-center bg-[#0a0806]/95 backdrop-blur-sm z-20">
+            <div className="flex flex-col items-center gap-6 px-6 text-center max-w-md">
+              {/* Warning Icon */}
+              <div className="w-16 h-16 border-2 border-[#c9a84c]/50 rounded-full flex items-center justify-center">
+                <span className="text-[#c9a84c] text-3xl">⚠</span>
               </div>
-              <p 
-                className="text-[#c9a84c] italic text-sm tracking-wide max-w-md"
-                style={{ fontFamily: 'Cinzel, serif' }}
-              >
-                Sorry iPhone users... currently unavailable here :(
-              </p>
-              <p 
-                className="text-[#e8e0d0]/70 text-xs max-w-sm"
-                style={{ fontFamily: 'Cinzel, serif' }}
-              >
-                Please check your connection or try refreshing the page
-              </p>
+              
+              {/* Main Error Message */}
+              <div className="flex flex-col gap-3">
+                <h3 
+                  className="text-[#c9a84c] text-base md:text-lg tracking-wide leading-relaxed"
+                  style={{ fontFamily: 'Cinzel, serif' }}
+                >
+                  Sorry iPhone users...
+                  <br />
+                  Currently unavailable here :(
+                </h3>
+                
+                <p 
+                  className="text-[#e8e0d0]/60 text-xs md:text-sm leading-relaxed"
+                >
+                  Please check your connection or try refreshing the page
+                </p>
+              </div>
+              
+              {/* Retry Button */}
               <button
                 onClick={() => {
                   setHasError(false)
@@ -615,7 +624,7 @@ export function VideoPlayer() {
                     })
                   }
                 }}
-                className="px-6 py-2 font-serif text-[#c9a84c] text-sm tracking-[0.1em] uppercase border border-[#c9a84c] bg-transparent hover:bg-[#c9a84c] hover:text-[#0a0806] transition-all duration-200"
+                className="mt-2 px-8 py-2.5 font-serif text-[#c9a84c] text-sm tracking-[0.15em] uppercase border border-[#c9a84c] bg-transparent hover:bg-[#c9a84c] hover:text-[#0a0806] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#c9a84c] focus:ring-offset-2 focus:ring-offset-[#0a0806]"
                 type="button"
               >
                 Retry
