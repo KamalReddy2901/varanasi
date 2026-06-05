@@ -79,26 +79,11 @@ export function VideoPlayer() {
   }, [selectedFormat])
 
   const handleFormatChange = (format: Format) => {
-    const wasPlaying = isPlaying
-    const currentTime = videoRef.current?.currentTime || 0
-    
     setSelectedFormat(format)
     setGlowPulse(true)
     setDescriptionKey(prev => prev + 1)
     setTimeout(() => setGlowPulse(false), 600)
-    
-    // Preserve playback position after format change
-    if (videoRef.current) {
-      videoRef.current.currentTime = currentTime
-      if (wasPlaying) {
-        setTimeout(() => {
-          videoRef.current?.play().catch(() => {
-            setShowPlayButton(true)
-            setIsPlaying(false)
-          })
-        }, 100)
-      }
-    }
+    // No need to touch the video - it's just a CSS change!
   }
   
   const handleQualityChange = (qualityIndex: number) => {
@@ -881,7 +866,7 @@ export function VideoPlayer() {
           </button>
 
           {/* Quality Settings */}
-          <div className="relative">
+          <div className="relative flex items-center">
             <button
               onClick={(e) => {
                 e.stopPropagation()
