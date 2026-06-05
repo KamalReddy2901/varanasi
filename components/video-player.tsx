@@ -185,39 +185,60 @@ export function VideoPlayer() {
     const videoElement = e.currentTarget
     console.error('Video loading error:', videoElement.error)
     
-    // Only show error after retries
-    if (retryCount < 2) {
-      console.log(`Retrying video load... (attempt ${retryCount + 1})`)
-      setRetryCount(prev => prev + 1)
-      setTimeout(() => {
-        if (videoRef.current) {
-          videoRef.current.load()
-          videoRef.current.play().catch(() => {
-            setShowPlayButton(true)
-          })
-        }
-      }, 1000)
-    } else {
+    // For iOS, often the video isn't really broken, just needs user interaction
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+    
+    if (isIOS) {
+      // On iOS, don't show full error - just require play button interaction
       setIsLoading(false)
-      setHasError(true)
+      setShowPlayButton(true)
+      setIsPlaying(false)
+    } else {
+      // Only show error after retries on non-iOS
+      if (retryCount < 2) {
+        console.log(`Retrying video load... (attempt ${retryCount + 1})`)
+        setRetryCount(prev => prev + 1)
+        setTimeout(() => {
+          if (videoRef.current) {
+            videoRef.current.load()
+            videoRef.current.play().catch(() => {
+              setShowPlayButton(true)
+            })
+          }
+        }, 1000)
+      } else {
+        setIsLoading(false)
+        setHasError(true)
+      }
     }
   }
 
   const handlePlay = async () => {
     if (videoRef.current) {
       try {
+        // Force load before play on iOS
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+        if (isIOS) {
+          videoRef.current.load()
+          await new Promise(resolve => setTimeout(resolve, 300))
+        }
+        
         await videoRef.current.play()
         setIsPlaying(true)
         setShowPlayButton(false)
+        setHasError(false)
       } catch (err) {
-        console.log('Autoplay prevented, showing play button')
+        console.log('Play failed:', err)
         setShowPlayButton(true)
+        setIsPlaying(false)
       }
     }
   }
 
   // Attempt autoplay and handle iOS restrictions
   useEffect(() => {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+    
     const attemptAutoplay = async () => {
       if (videoRef.current) {
         // Set iOS-specific attributes via ref
@@ -231,8 +252,17 @@ export function VideoPlayer() {
         // Force load metadata
         videoRef.current.load()
         
-        // Small delay to ensure video is ready on iOS
-        await new Promise(resolve => setTimeout(resolve, 200))
+        // iOS needs more time to prepare video
+        const delay = isIOS ? 500 : 200
+        await new Promise(resolve => setTimeout(resolve, delay))
+        
+        // On iOS, always show play button instead of autoplay
+        if (isIOS) {
+          setIsLoading(false)
+          setShowPlayButton(true)
+          setIsPlaying(false)
+          return
+        }
         
         try {
           await videoRef.current.play()
@@ -551,7 +581,9 @@ export function VideoPlayer() {
           loop
           muted
           playsInline
+          webkit-playsinline="true"
           preload="auto"
+          crossOrigin="anonymous"
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
           onLoadedData={handleLoadedData}
