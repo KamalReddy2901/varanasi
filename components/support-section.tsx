@@ -22,12 +22,12 @@ export function SupportSection() {
       <div className="w-full h-px bg-[#c9a84c]/20 mb-8" />
       
       {/* Designer credit - elegant and minimal */}
-      <div className="flex items-center justify-center gap-4 mb-4">
-        <div className="h-px w-12 bg-[#c9a84c]/30"></div>
-        <p className="text-[#c9a84c]/70 font-serif text-sm text-center tracking-wider">
+      <div className="flex items-center justify-center gap-2 sm:gap-4 mb-4 px-2">
+        <div className="h-px w-6 sm:w-12 bg-[#c9a84c]/30 flex-shrink-0"></div>
+        <p className="text-[#c9a84c]/70 font-serif text-xs sm:text-sm text-center tracking-wider whitespace-nowrap">
           Designed by Kamal Reddy :)
         </p>
-        <div className="h-px w-12 bg-[#c9a84c]/30"></div>
+        <div className="h-px w-6 sm:w-12 bg-[#c9a84c]/30 flex-shrink-0"></div>
       </div>
       
       <div className="flex flex-col items-center gap-6 text-center">
