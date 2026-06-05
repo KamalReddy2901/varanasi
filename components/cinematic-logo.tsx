@@ -4,7 +4,7 @@ import Image from "next/image"
 
 export function CinematicLogo() {
   return (
-    <div className="relative w-[85vw] max-w-[550px] mb-8">
+    <div className="relative w-[85vw] max-w-[550px] mb-0">
       {/* Hero background glow layers (behind logo only) */}
       <div
         className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[260%] w-[160%] -translate-x-1/2 -translate-y-1/2"

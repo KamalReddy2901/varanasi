@@ -19,7 +19,16 @@ export function SupportSection() {
   return (
     <section className="w-full max-w-[800px] mx-auto px-6 py-12">
       {/* Gold divider */}
-      <div className="w-full h-px bg-[#c9a84c]/20 mb-12" />
+      <div className="w-full h-px bg-[#c9a84c]/20 mb-8" />
+      
+      {/* Designer credit - elegant and minimal */}
+      <div className="flex items-center justify-center gap-4 mb-4">
+        <div className="h-px w-12 bg-[#c9a84c]/30"></div>
+        <p className="text-[#c9a84c]/70 font-serif text-sm text-center tracking-wider">
+          Designed by Kamal Reddy :)
+        </p>
+        <div className="h-px w-12 bg-[#c9a84c]/30"></div>
+      </div>
       
       <div className="flex flex-col items-center gap-6 text-center">
         <h2 className="font-serif text-[#c9a84c] text-xl tracking-[0.1em]">
@@ -27,7 +36,7 @@ export function SupportSection() {
         </h2>
         
         <p className="text-[#e8e0d0] font-sans text-sm">
-          If you find this project helpful, consider supporting the developer.
+          If you find this project interesting, consider supporting the developer.
         </p>
 
         <button
@@ -52,9 +61,14 @@ export function SupportSection() {
           </div>
         )}
 
-        <p className="text-[#e8e0d0] font-sans text-xs italic">
-          Every contribution helps keep this project free and updated!
-        </p>
+        <div className="flex flex-col items-center gap-1">
+          <p className="text-[#e8e0d0] font-sans text-xs italic">
+            Every contribution helps keep this project free and updated!
+          </p>
+          <p className="text-[#e8e0d0]/50 font-sans text-xs italic">
+            (PS: I'm just a student ✌️)
+          </p>
+        </div>
       </div>
     </section>
   )

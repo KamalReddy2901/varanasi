@@ -31,14 +31,18 @@ export default function Page() {
         <CinematicLogo />
 
         {/* Tagline */}
-        <p className="font-serif text-[#c9a84c] text-[10px] md:text-xs lg:text-sm tracking-[0.25em] uppercase mb-3 px-4 text-center">
-          An SS Rajamouli Film
+        <p className="font-serif text-[#c9a84c] text-[10px] md:text-xs lg:text-sm tracking-[0.25em] uppercase mb-12 md:mb-16 px-4 text-center w-full">
+          &nbsp;&nbsp;&nbsp;&nbsp;Filmed for IMAX · In Cinemas 7<span className="text-[0.75em]">th</span> April 2027
         </p>
 
-        {/* Subtitle */}
-        <p className="font-serif text-[#e8e0d0] text-[10px] md:text-xs tracking-[0.2em] uppercase mb-12 md:mb-16 px-4 text-center">
-          Experience The Formats
-        </p>
+        {/* Subtitle above video player */}
+        <div className="flex items-center justify-center gap-4 mb-8 px-4">
+          <div className="h-px w-12 bg-[#e8e0d0]/30"></div>
+          <p className="font-serif text-[#e8e0d0] text-[10px] md:text-xs tracking-[0.2em] uppercase text-center">
+            Explore different Formats
+          </p>
+          <div className="h-px w-12 bg-[#e8e0d0]/30"></div>
+        </div>
 
         {/* Video Player Section */}
         <VideoPlayer />
@@ -72,13 +76,6 @@ export default function Page() {
 
         {/* Support Section */}
         <SupportSection />
-
-        {/* Footer */}
-        <footer className="mt-8 pb-10 px-4">
-          <p className="font-serif text-[#c9a84c] text-[10px] md:text-xs tracking-[0.2em] uppercase text-center">
-            Filmed for IMAX · In Cinemas April 2027
-          </p>
-        </footer>
       </div>
 
       {/* Vignette Effect */}
